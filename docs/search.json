@@ -1,0 +1,142 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Nanopore amplicon data analysis",
+    "section": "",
+    "text": "Introduction\nWelcome to the Nanopore amplicon analysis manual. This manual contains a step by step guide for performing quality control, generating a consensus and comparing sequences to reference sequences. In the final chapter of the manual we will show how to automate all of these steps into a single pipeline for speed and convenience.\n\n\n\n\n\n\nTip\n\n\n\nIf you are just interested in running the automated workflow, then you only have to check out the chapters ‘Preparation’ and ‘Automating data analysis’.",
+    "crumbs": [
+      "Introduction"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-02-preparation.html",
+    "href": "chapters/NAAM-02-preparation.html",
+    "title": "1  Preparation",
+    "section": "",
+    "text": "1.1 Singularity container\nThis workflow is distributed as a self-contained Singularity container image, which includes all necessary software dependencies and helper scripts. This simplifies setup considerably. It is required that Singularity version 3.x or later is available on your system. If you are working with a high performance computing (HPC) system, then this will likely already be installed and available for use. Try writing singularity --help in your terminal (that’s connected to the HPC system) and see if the command is recognized.",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preparation</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-02-preparation.html#singularity-container",
+    "href": "chapters/NAAM-02-preparation.html#singularity-container",
+    "title": "1  Preparation",
+    "section": "",
+    "text": "1.1.1 Download pre-built image\nThe singularity container needs an image file to activate the precompiled work environment. You can download the required workflow image file (naam_workflow.sif) directly through the terminal via:\n### ADJUST THIS LATER\nwget https://github.com/LucvZon/illumina-metagenomic-analysis-manual/releases/tag/v1.0.0/imam_workflow.sif\nOr go to the github page and manually download it there, then transfer it to your HPC system.\n\n\n1.1.2 Verify container\nYou can test basic execution:\nsingularity --version\nsingularity exec naam_workflow.sif echo \"Container is accessible!\"\nTo check more in depth, you can start an interactive shell inside the build container and run some checks. singularity shell naam_workflow.sif will drop you into a shell running inside the container. The conda environment needed for this workflow is automatically active on start-up of the interactive shell. All the tools of the conda environment will therefore be ready to use.\nPlease note that you do not have to run conda activate {environment} to activate the environment – everything is inside naam_workflow.sif. If you’re curious about the conda environment we’re using, you can check it out here\nsingularity shell naam_workflow.sif # Start interactive shell\nminimap2 --help # Check one of the tools from the conda environment\nwhich python # Check python version of the conda environment\n\n\n\n\n\n\nNote\n\n\n\nWe are now ready to start executing the code to perform quality control of our raw Nanopore sequencing data in the next chapter.",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preparation</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-03-quality_control.html",
+    "href": "chapters/NAAM-03-quality_control.html",
+    "title": "2  Quality control",
+    "section": "",
+    "text": "2.1 Merging and decompressing FASTQ\nFor simplicity’s sake, most steps will be geared towards an analysis of a single sample. It is recommended to follow a basic file structure like the following below:\nWhen running any command that generates output files, it’s essential to ensure that the output directory exists before executing the command. While some tools will automatically create the output directory if it’s not present, this behavior is not guaranteed. If the output directory doesn’t exist and the tool doesn’t create it, the command will likely fail with an error message (or, worse, it might fail silently, leading to unexpected results). This is not required if you are running a snakemake workflow.\nTo prevent a lot of future frustration, create your output directories beforehand with the mkdir command as such:\nTo use the required tools, activate the Singularity container as follows:\nAny file in linux can be pasted to another file using the cat command. zcat in addition also unzips gzipped files (e.g. .fastq.gz extension). If your files are already unzipped, use cat instead.\nModify and run:",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Quality control</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-03-quality_control.html#merging-and-decompressing-fastq",
+    "href": "chapters/NAAM-03-quality_control.html#merging-and-decompressing-fastq",
+    "title": "2  Quality control",
+    "section": "",
+    "text": "zcat {input.folder}/*.fastq.gz &gt; {output}\n\n{input.folder} should contain all your .fastq.gz files for a single barcode.\n{output} should be the name of the combined unzipped fastq file (e.g. all_barcode01.fastq).",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Quality control</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-03-quality_control.html#running-fastp-quality-control-software",
+    "href": "chapters/NAAM-03-quality_control.html#running-fastp-quality-control-software",
+    "title": "2  Quality control",
+    "section": "2.2 Running fastp quality control software",
+    "text": "2.2 Running fastp quality control software\nThe fastp software is a very fast multipurpose quality control software to perform quality and sequence adapter trimming for Illumina short-read and Nanopore long-read data.\nBecause we are processing Nanopore data, several quality control options have to be disabled. The only requirement we set is a minimum median phred quality score of the read of 10 and a minimum length of around the size of the amplicon (e.g. 400 nucleotides).\nfastp -i {input} -o {output} -j /dev/null -h {report} \\\n--disable_trim_poly_g \\\n--disable_adapter_trimming \\\n--qualified_quality_phred 10 \\\n--unqualified_percent_limit 50 \\\n--length_required {min_length} \\\n-w {threads}\n\n{input} is the merged file from section 2.1.\n{output} is the the quality controlled .fastq filename (e.g. all_barcode01_QC.fastq).\n{report} is the QC report filename, containing various details about the quality of the data before and after processing.\n{min_length} is the expected size of your amplicons, to remove very short “rubbish” reads, generally the advise is to set it a bit lower than the expected size. Based on the QC report, which lists the number of removed reads you may adjust this setting, if too many reads are removed.\n\n\n\n\n\n\n\nNote\n\n\n\n{threads} is a recurring setting for the number of CPUs to use for the processing. On a laptop this will be less (e.g. 8), on an HPC you may be able to use 64 or more CPUs for processing. However, how much performance increase you get depends on the software.",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Quality control</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-03-quality_control.html#mapping-reads-to-primer-reference",
+    "href": "chapters/NAAM-03-quality_control.html#mapping-reads-to-primer-reference",
+    "title": "2  Quality control",
+    "section": "2.3 Mapping reads to primer reference",
+    "text": "2.3 Mapping reads to primer reference\nTo precisely trim the primers we map the reads to a reference sequence based on which the primers were designed. This is to make sure, when looking for the primer locations, all primer location can be found. To map the reads we use minimap2 with the -x map-ont option for ONT reads. -Y ensures reads are not hardclipped. Afterwards we use samtools to reduce the .bam (mapping) file to only those reads that mapped to the reference and sort the reads in mapping file based on mapping position, which is necessary to continue working with the file.\nminimap2 -Y -t {threads} -x map-ont -a {reference} {input} | \\\nsamtools view -bF 4 - | samtools sort -@ {threads} - &gt; {output}\n\n{reference} is the fasta file containing the reference that your primers should be able to map to.\n{input} is the QC fastq file from section 2.2.\n{output} is the mapping file, it could be named something like barcode01_QCmapped.bam",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Quality control</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-03-quality_control.html#trimming-primers-using-ampliclip",
+    "href": "chapters/NAAM-03-quality_control.html#trimming-primers-using-ampliclip",
+    "title": "2  Quality control",
+    "section": "2.4 Trimming primers using Ampliclip",
+    "text": "2.4 Trimming primers using Ampliclip\nAmpliclip is a tool written by David to remove the primer sequences of nanopore amplicon reads. It works by mapping the primer sequences to a reference genome to find their location. Then it clips the reads mapped to the same reference (which we did in the previous step) by finding overlap between the primer location and the read ends. It allows for some “junk” in front of the primer location with --padding and mismatches between primer and reference --mismatch. After clipping it trims the reads and outputs a clipped .bam file and a trimmed .fastq file. --minlength can be set to remove any reads that, after trimming, have become shorter than this length. Set this to the value that was used in the QC section (e.g. 400).\nAfter the trimming the clipped mapping file has to be sorted again.\nsamtools index {input.mapped}\n\nampliclip \\\n--infile {input.mapped} \\\n--outfile {output.clipped}_ \\\n--outfastq {output.trimmed} \\\n--primerfile {primers} \\\n--referencefile {reference}\\\n-fwd LEFT -rev RIGHT \\\n--padding 20 --mismatch 2 --minlength {min_length} &gt; {log} 2&gt;&1\n\nsamtools sort {output.clipped}_ &gt; {output.clipped}\nrm {output.clipped}_\n\n{input.mapped} is the mapping file created in section 2.3.\n{output.clipped} is the mapping file processed to clip the primer sequences off (e.g. barcode01_clipped.bam).\n{output.trimmed} is the trimmed fastq file, this contains all reads mapped to the reference with primer sequences trimmed off (e.g. barcode01_trimmed.bam).\n{primers} is the name of the primer sequence fasta file. Make sure names of the primers have either ‘LEFT’ or ‘RIGHT’ in their name to specify if it is a left or right side primer.\n{reference} is the name of the reference file, this must be the same file as was used for mapping in section 2.3.\n{min_length} is the minimum required length of the trimmed reads, set it to the same value as when using fastp.\n\nTo see what has happened in the trimming process we can open the .bam mapping files before and after primer trimming using the visualization tool UGENE, a free and open source version of the software geneious.\nIn UGENE you can open a .bam via the “open file” option.\n\n\n\n\n\n\nNote\n\n\n\nWe now have our quality controlled sequence reads which we can use to create a consensus sequence in the next chapter.",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Quality control</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-04-generate_consensus.html",
+    "href": "chapters/NAAM-04-generate_consensus.html",
+    "title": "3  Generating a Consensus Sequence",
+    "section": "",
+    "text": "3.1 Mapping trimmed reads to reference\nSimilar to what we did before we now map the trimmed reads to our preferred reference genome.",
+    "crumbs": [
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Generating a Consensus Sequence</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-04-generate_consensus.html#mapping-trimmed-reads-to-reference",
+    "href": "chapters/NAAM-04-generate_consensus.html#mapping-trimmed-reads-to-reference",
+    "title": "3  Generating a Consensus Sequence",
+    "section": "",
+    "text": "Note\n\n\n\nThis is optional if the reference for the primer design and the preferred reference for consensus generation are different. Otherwise simply use the clipped mapping file from the previous step.\n\n\n\nminimap2 -Y -t {threads} -x map-ont -a {reference} {input} | \\\nsamtools view -bF 4 - | samtools sort -@ {threads} - &gt; {output}\n\n{reference} is the fasta file containing the preferred reference.\n{input} is the trimmed fastq file from section 2.4.\n{output} is the mapping file, it could be named something like barcode01_mapped.bam",
+    "crumbs": [
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Generating a Consensus Sequence</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-04-generate_consensus.html#creating-consensus-from-filtered-mutations",
+    "href": "chapters/NAAM-04-generate_consensus.html#creating-consensus-from-filtered-mutations",
+    "title": "3  Generating a Consensus Sequence",
+    "section": "3.2 Creating consensus from filtered mutations",
+    "text": "3.2 Creating consensus from filtered mutations\nVirconsens is a tool written by David to create a consensus sequence from Nanopore amplicon reads mapped to a reference in a mapping .bam file.\nIt works by reading the mapping file position-by-position and counting the mutations, insertions and deletions. The mutation or deletion (or original nucleotide from the reference) with the highest count is considered the “consensus” at that position.\nIn the next step it filters positions with too low coverage based on the mindepth threshold or too low frequency based on the minAF threshold.\nThe last step of the tool is to iterate over the reference genome and replace the reference nucleotide with the mutation, insertion or deletion, replace filtered position with “N”, or keep the original reference nucleotide. (1 and 2 nucleotide indels are ignored as they are very often erroneous).\nBefore running virconsens we have to index the .bam mapping file.\nsamtools index {input}\n\nvirconsens \\\n-b {input} \\\n-o {output} \\\n-n {name} \\\n-r {reference} \\\n-d {coverage} \\\n-af 0.1 \\\n-c {threads}\n\n{input} is the mapping bam file from the previous step.\n{output} is the fasta file containing the consensus sequence (e.g. barcode01_consensus.fasta)\n{name} is the custom name of your sequence that will be used in the fasta file (e.g. barcode01_consensus)\n{reference} is the fasta file containing the preferred reference, the same as in the previous step.\n{coverage} is the minimal depth at which to not consider any alternative alleles\n\n\n\n\n\n\n\nNote\n\n\n\nWe now have a consensus sequence of our sequencing result. This is the “raw” result we can continue using for multiple sequence alignment and phylogeny in the next chapter.",
+    "crumbs": [
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Generating a Consensus Sequence</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-05-compare_sequences.html",
+    "href": "chapters/NAAM-05-compare_sequences.html",
+    "title": "4  Comparing sequence to reference sequences",
+    "section": "",
+    "text": "4.1 Creating multiple sequence alignment\nokay, gotta think for a moment. . .",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Comparing sequence to reference sequences</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-05-compare_sequences.html#generate-useful-stats",
+    "href": "chapters/NAAM-05-compare_sequences.html#generate-useful-stats",
+    "title": "4  Comparing sequence to reference sequences",
+    "section": "4.2 Generate useful stats",
+    "text": "4.2 Generate useful stats\nseqkit stats -T for raw, QC, trimmed and mapped.",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Comparing sequence to reference sequences</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-06-sars_cov_2.html",
+    "href": "chapters/NAAM-06-sars_cov_2.html",
+    "title": "5  Extra: SARS-CoV-2 analysis",
+    "section": "",
+    "text": "If you are dealing with SARS-Cov-2 data, then you can expand the analysis as follows…",
+    "crumbs": [
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Extra: SARS-CoV-2 analysis</span>"
+    ]
+  }
+]
