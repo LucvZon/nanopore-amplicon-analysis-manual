@@ -1,25 +1,27 @@
 project:
   type: book
+  output-dir: docs
 
 book:
-  title: "pipeline-2"
-  author: "Norah Jones"
-  date: "23/04/2025"
+  title: "Nanopore amplicon data analysis"
+  author: "Luc van Zon"
+  search: TRUE
+  date: "04/23/2025"
   chapters:
     - index.qmd
-    - intro.qmd
-    - summary.qmd
-    - references.qmd
+    - chapters/NAAM-02-preparation.qmd
+    - chapters/NAAM-03-quality_control.qmd
+    - chapters/NAAM-04-generate_consensus.qmd
+    - chapters/NAAM-05-compare_sequences.qmd
+    - chapters/NAAM-06-sars_cov_2.qmd
+    - chapters/NAAM-07-nanopore_hpc.qmd
 
-bibliography: references.bib
+toc: true
+number-sections: true
+number-depth: 3
 
 format:
   html:
     theme:
-      - cosmo
-      - brand
-  pdf:
-    documentclass: scrreprt
-
-editor: visual
-
+      light: flatly
+      dark: darkly
