@@ -1,0 +1,7 @@
+# Introduction {.unnumbered}
+
+Welcome to the Nanopore amplicon analysis manual. This manual contains a step by step guide for performing quality control, generating a consensus and comparing sequences to reference sequences. In the final chapter of the manual we will show how to automate all of these steps into a single pipeline for speed and convenience.
+
+::: callout-tip
+If you are just interested in running the automated workflow, then you only have to check out the chapters 'Preparation' and 'Automating data analysis'.
+:::

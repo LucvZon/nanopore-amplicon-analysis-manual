@@ -1,0 +1,131 @@
+# Quality control
+
+::: callout-warning
+# Important!
+
+In the next steps we are going to copy-paste code, adjust it to our needs, and execute it on the command-line.
+
+**Please open a plain text editor to paste the code from the next steps, to keep track of your progress!**
+:::
+
+For simplicity's sake, most steps will be geared towards an analysis of a single sample. It is recommended to follow a basic file structure like the following below:
+
+```         
+my_project/
+├── raw_data/     # Contains barcode directories 
+│   ├── barcode01      # Contains the raw, gzipped FASTQ files
+│       ├── file1.fastq.gz 
+│       └── file2.fastq.gz
+│   ├── barcode02
+│       └── file1.fastq.gz 
+│   └── barcode03
+│       ├── file1.fastq.gz 
+│       ├── file2.fastq.gz
+│       └── file3.fastq.gz
+└── results/           # This is where the output files will be stored
+└── log/               # This is where log files will be stored
+```
+
+When running any command that generates output files, it's essential to ensure that the output directory exists *before* executing the command. While some tools will automatically create the output directory if it's not present, this behavior is not guaranteed. If the output directory doesn't exist and the tool doesn't create it, the command will likely fail with an error message (or, worse, it might fail silently, leading to unexpected results). This is not required if you are running a snakemake workflow.
+
+To prevent a lot of future frustration, create your output directories beforehand with the `mkdir` command as such:
+
+``` bash
+mkdir -p results
+mkdir -p log
+# Create a subdirectory
+mkdir -p results/assembly
+```
+
+To use the required tools, activate the Singularity container as follows:
+```bash
+singularity shell naam_workflow.sif
+```
+
+## Merging and decompressing FASTQ
+
+Any file in linux can be pasted to another file using the cat command. zcat in addition also unzips gzipped files (e.g. .fastq.gz extension). If your files are already unzipped, use cat instead.
+
+**Modify and run:**
+
+``` bash
+zcat {input.folder}/*.fastq.gz > {output}
+```
+
+-   `{input.folder}` should contain all your .fastq.gz files for a single barcode.
+-   `{output}` should be the name of the combined unzipped fastq file (e.g. all_barcode01.fastq).
+
+## Running fastp quality control software
+
+The [fastp](https://github.com/OpenGene/fastp){target="_blank"} software is a very fast multipurpose quality control software to perform quality and sequence adapter trimming for Illumina short-read and Nanopore long-read data.
+
+Because we are processing Nanopore data, several quality control options have to be disabled. The only requirement we set is a minimum median phred quality score of the read of 10 and a minimum length of around the size of the amplicon (e.g. 400 nucleotides).
+
+```bash
+fastp -i {input} -o {output} -j /dev/null -h {report} \
+--disable_trim_poly_g \
+--disable_adapter_trimming \
+--qualified_quality_phred 10 \
+--unqualified_percent_limit 50 \
+--length_required {min_length} \
+-w {threads}
+```
+
+- `{input}` is the merged file from section 2.1.
+- `{output}` is the the quality controlled `.fastq` filename (e.g. `all_barcode01_QC.fastq`).
+- `{report}` is the QC report filename, containing various details about the quality of the data before and after processing. 
+- `{min_length}` is the expected size of your amplicons, to remove very short "rubbish" reads, generally the advise is to set it a bit lower than the expected size. Based on the QC report, which lists the number of removed reads you may adjust this setting, if too many reads are removed.
+
+::: callout-note
+`{threads}` is a recurring setting for the number of CPUs to use for the processing. On a laptop this will be less (e.g. 8), on an HPC you may be able to use 64 or more CPUs for processing. However, how much performance increase you get depends on the software.
+:::
+
+## Mapping reads to primer reference
+
+To precisely trim the primers we map the reads to a reference sequence based on which the primers were designed. This is to make sure, when looking for the primer locations, all primer location can be found. To map the reads we use [minimap2](https://github.com/lh3/minimap2) with the `-x map-ont` option for ONT reads. `-Y` ensures reads are not hardclipped. Afterwards we use [samtools](https://www.htslib.org/) to reduce the `.bam` (mapping) file to only those reads that mapped to the reference and sort the reads in mapping file based on mapping position, which is necessary to continue working with the file.
+
+```bash
+minimap2 -Y -t {threads} -x map-ont -a {reference} {input} | \
+samtools view -bF 4 - | samtools sort -@ {threads} - > {output}
+```
+
+- `{reference}` is the fasta file containing the reference that your primers should be able to map to.
+- `{input}` is the QC fastq file from section 2.2.
+- `{output}` is the mapping file, it could be named something like `barcode01_QCmapped.bam`
+
+## Trimming primers using Ampliclip
+
+[Ampliclip](https://github.com/dnieuw/Ampliclip) is a tool written by [David](https://github.com/dnieuw/) to remove the primer sequences of nanopore amplicon reads. It works by mapping the primer sequences to a reference genome to find their location. Then it clips the reads mapped to the same reference (which we did in the previous step) by finding overlap between the primer location and the read ends. It allows for some "junk" in front of the primer location with `--padding` and mismatches between primer and reference `--mismatch`. After clipping it trims the reads and outputs a clipped `.bam` file and a trimmed `.fastq` file. `--minlength` can be set to remove any reads that, after trimming, have become shorter than this length. Set this to the value that was used in the QC section (e.g. 400).
+
+After the trimming the clipped mapping file has to be sorted again.
+
+```bash
+samtools index {input.mapped}
+
+ampliclip \
+--infile {input.mapped} \
+--outfile {output.clipped}_ \
+--outfastq {output.trimmed} \
+--primerfile {primers} \
+--referencefile {reference}\
+-fwd LEFT -rev RIGHT \
+--padding 20 --mismatch 2 --minlength {min_length} > {log} 2>&1
+
+samtools sort {output.clipped}_ > {output.clipped}
+rm {output.clipped}_
+```
+
+- `{input.mapped}` is the mapping file created in section 2.3.
+- `{output.clipped}` is the mapping file processed to clip the primer sequences off (e.g. `barcode01_clipped.bam`).
+- `{output.trimmed}` is the trimmed fastq file, this contains all reads mapped to the reference with primer sequences trimmed off (e.g. `barcode01_trimmed.bam`).
+- `{primers}` is the name of the primer sequence fasta file. Make sure names of the primers have either 'LEFT' or 'RIGHT' in their name to specify if it is a left or right side primer.
+- `{reference}` is the name of the reference file, this must be the same file as was used for mapping in section 2.3.
+- `{min_length}` is the minimum required length of the trimmed reads, set it to the same value as when using `fastp`.
+
+To see what has happened in the trimming process we can open the `.bam` mapping files before and after primer trimming using the visualization tool [UGENE](https://ugene.net/), a free and open source version of the software [geneious](https://www.geneious.com/).
+
+In UGENE you can open a `.bam` via the "open file" option.
+
+::: {.callout-note}
+We now have our quality controlled sequence reads which we can use to create a consensus sequence in the next chapter.
+:::

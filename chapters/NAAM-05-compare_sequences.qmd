@@ -1,0 +1,9 @@
+# Comparing sequence to reference sequences
+
+## Creating multiple sequence alignment
+
+okay, gotta think for a moment. . .
+
+## Generate useful stats
+
+seqkit stats -T for raw, QC, trimmed and mapped.
