@@ -114,7 +114,17 @@
     "href": "chapters/NAAM-05-compare_sequences.html",
     "title": "4  Comparing sequence to reference sequences",
     "section": "",
-    "text": "4.1 Creating multiple sequence alignment\nokay, gotta think for a moment. . .",
+    "text": "4.1 Creating multiple sequence alignment\nWe can now create a multiple sequence alignment (MAF). (Not to be confused with a read alignment .bam file).\nWe can use a reference based multiple sequence alignment approach with minimap2 and gofasta. This is very fast and works well even for large genomes (e.g. 200kb+) or many sequences (10,000+). However, gofasta does not perform a “real” multiple alignment, because it ignores insertions in the sequences compared to the reference and removes them. Therefore if insertions are expected and present in the sequences, they will have to be added manually. On the positive side, phylogenetic analysis tools, such as IQTREE2, also ignore any insertions, so for the phylogenetic analysis the removal of insertions does not matter.\n(tmp.sam can be deleted)",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Comparing sequence to reference sequences</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-05-compare_sequences.html#creating-multiple-sequence-alignment",
+    "href": "chapters/NAAM-05-compare_sequences.html#creating-multiple-sequence-alignment",
+    "title": "4  Comparing sequence to reference sequences",
+    "section": "",
+    "text": "minimap2 -t {threads} -a \\\n-x asm20 \\\n--sam-hit-only \\\n--secondary=no \\\n--score-N=0 \\\n{reference} \\\n{input} \\\n-o tmp.sam\n\ngofasta sam toMultiAlign \\\n-s tmp.sam \\\n-o {output}\n\n{input} here is the .fasta file containing all consensus sequences and references you would like to align.\n{output} is the name of the aligned fasta file (e.g. consensus_with_ref_aligned.fasta).\n{reference} is the reference used to performe a reference based multiple alignment, use the same reference as we used for read mapping before.",
     "crumbs": [
       "<span class='chapter-number'>4</span>  <span class='chapter-title'>Comparing sequence to reference sequences</span>"
     ]
@@ -124,7 +134,7 @@
     "href": "chapters/NAAM-05-compare_sequences.html#generate-useful-stats",
     "title": "4  Comparing sequence to reference sequences",
     "section": "4.2 Generate useful stats",
-    "text": "4.2 Generate useful stats\nseqkit stats -T for raw, QC, trimmed and mapped.",
+    "text": "4.2 Generate useful stats\nYou can generate read stats with seqkit stats -T for the raw, QC, trimmed and mapped reads.\nseqkit stats -T {input} &gt; {output}\nIf want to check the read stats for a mapping file, you can use the following:\nfor file in {input}; do\n    samtools fastq $file | seqkit stats -T --stdin-label $file | tail -1\ndone &gt; {output}\n\n{input} is your mapping file.\n{output} is a tab separated file .tsv with the read stats.",
     "crumbs": [
       "<span class='chapter-number'>4</span>  <span class='chapter-title'>Comparing sequence to reference sequences</span>"
     ]
@@ -134,9 +144,39 @@
     "href": "chapters/NAAM-06-sars_cov_2.html",
     "title": "5  Extra: SARS-CoV-2 analysis",
     "section": "",
-    "text": "If you are dealing with SARS-Cov-2 data, then you can expand the analysis as follows…",
+    "text": "5.1 To be added…\nIf you are dealing with SARS-Cov-2 data, then you can expand the analysis as follows…\nHere are some of the snakemake rules that are currently excluded:",
     "crumbs": [
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>Extra: SARS-CoV-2 analysis</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-06-sars_cov_2.html#to-be-added",
+    "href": "chapters/NAAM-06-sars_cov_2.html#to-be-added",
+    "title": "5  Extra: SARS-CoV-2 analysis",
+    "section": "",
+    "text": "create_depth_file\ncreate_vcf\nannotate_vcf\nfilter_vcf\ncreate_filtered_vcf_tables",
+    "crumbs": [
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Extra: SARS-CoV-2 analysis</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-07-nanopore_hpc.html",
+    "href": "chapters/NAAM-07-nanopore_hpc.html",
+    "title": "6  Automating data analysis",
+    "section": "",
+    "text": "6.1 Preparing to run the workflow\nIn the previous chapters, you learned how to perform each step of the amplicon data analysis pipeline manually. While this is a valuable learning experience, it’s not practical for analyzing large datasets or for ensuring reproducibility in the long term.\nWe can make use of a tool called Snakemake to automate the previous steps into a single pipeline. With Snakemake, you can define the steps of your analysis in a Snakefile and then let Snakemake handle the execution, dependency management, and error handling.\nTo run the automated workflow, you’ll need to make sure that your project directory is set up correctly.\nTo make the project setup process even easier, we’ve created a simple command-line tool called amplicon_project.py. This tool automates the creation of the project directory, the sample configuration file (sample.tsv), and the general settings configuration file (config.yaml), guiding you through each step with clear prompts and error checking.\nThe amplicon_project.py tool is built into the singularity container image. Instead of using singularity shell, we can use singularity exec to directly execute commands. Try accessing amplicon_project.py:\nNow prepare your project directory with prepare_project.py as follows:",
+    "crumbs": [
+      "<span class='chapter-number'>6</span>  <span class='chapter-title'>Automating data analysis</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/NAAM-07-nanopore_hpc.html#preparing-to-run-the-workflow",
+    "href": "chapters/NAAM-07-nanopore_hpc.html#preparing-to-run-the-workflow",
+    "title": "6  Automating data analysis",
+    "section": "",
+    "text": "Important\n\n\n\nSomething about raw read data structure…\n\n\n\n\n\nsingularity exec naam_workflow.sif python /amplicon_project.py --help\nusage: amplicon_project.py [-h] [-p PROJECT_DIR] -n STUDY_NAME -d RAW_FASTQ_DIR -P PRIMER -r PRIMER_REFERENCE -R REFERENCE_GENOME [-m MIN_LENGTH] [-c COVERAGE] [-t THREADS] [--use_sars_cov_2_workflow]\n\nInteractive tool for setting up a Snakemake project.\n\noptions:\n  -h, --help            show this help message and exit\n  -p PROJECT_DIR, --project_dir PROJECT_DIR\n                        Project directory path (default: current directory)\n  -n STUDY_NAME, --study_name STUDY_NAME\n                        Name of the study\n  -d RAW_FASTQ_DIR, --raw_fastq_dir RAW_FASTQ_DIR\n                        Directory containing raw FASTQ files\n  -P PRIMER, --primer PRIMER\n                        Fasta file containing primer sequences\n  -r PRIMER_REFERENCE, --primer_reference PRIMER_REFERENCE\n                        Fasta file containing primer reference sequence\n  -R REFERENCE_GENOME, --reference_genome REFERENCE_GENOME\n                        Fasta file containing reference genome\n  -m MIN_LENGTH, --min_length MIN_LENGTH\n                        Minimum read length (default: 1000)\n  -c COVERAGE, --coverage COVERAGE\n                        Minimum coverage required for consensus (default: 30)\n  -t THREADS, --threads THREADS\n                        Maximum number of threads for the Snakefile (default: 8)\n  --use_sars_cov_2_workflow\n                        Add this parameter if you want to analyze SARS-CoV-2 data\n\nsingularity exec \\\n  --bind /mnt/viro0002:/mnt/viro0002 \\\n  --bind $HOME:$HOME \\\n  --bind $PWD:$PWD \\\n  naam_workflow.sif \\\n  python /amplicon_project.py \\\n    -p {project.folder} \\\n    -n {name} \\\n    -d {reads} \\\n    -m {min_length} \\\n    -c {coverage} \\\n    -P {primer} \\\n    -r {primer.reference} \\\n    -R {reference} \\\n    -t {threads}\n\n{project.folder} is your project folder. This is where you run your workflow and store results.\n{name} is the name of your study, no spaces allowed.\n{reads} is the folder that contains your raw .fastq.gz files.\n{min_length} is the minimum length required for the reads to be accepted. This must be below the expected size of the amplicon, for example, for the 2500nt mpox amplicon we use a threshold of 1000\n{coverage} is the minimum coverage required, anything lower than 30 is not recommended, for low accuracy basecalling, higher coverage is recommended.\n{primer} is the file containing the primer sequences\n{primer.reference} is the reference sequence .fasta file used for primer trimming.\n{reference} is the reference sequence .fasta file used for the consensus generation.",
+    "crumbs": [
+      "<span class='chapter-number'>6</span>  <span class='chapter-title'>Automating data analysis</span>"
     ]
   }
 ]

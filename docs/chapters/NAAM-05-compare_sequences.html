@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -192,11 +226,39 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="creating-multiple-sequence-alignment" class="level2" data-number="4.1">
 <h2 data-number="4.1" class="anchored" data-anchor-id="creating-multiple-sequence-alignment"><span class="header-section-number">4.1</span> Creating multiple sequence alignment</h2>
-<p>okay, gotta think for a moment. . .</p>
+<p>We can now create a multiple sequence alignment (MAF). (Not to be confused with a read alignment .bam file).</p>
+<p>We can use a reference based multiple sequence alignment approach with minimap2 and gofasta. This is very fast and works well even for large genomes (e.g.&nbsp;200kb+) or many sequences (10,000+). However, gofasta does not perform a “real” multiple alignment, because it ignores insertions in the sequences compared to the reference and removes them. Therefore if insertions are expected and present in the sequences, they will have to be added manually. On the positive side, phylogenetic analysis tools, such as <a href="https://github.com/iqtree/iqtree2">IQTREE2</a>, also ignore any insertions, so for the phylogenetic analysis the removal of insertions does not matter.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">minimap2</span> <span class="at">-t</span> {threads} <span class="at">-a</span> <span class="dt">\</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>-x asm20 <span class="dt">\</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>--sam-hit-only <span class="dt">\</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>--secondary=no <span class="dt">\</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>--score-N=0 <span class="dt">\</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>{reference} <span class="dt">\</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>{input} <span class="dt">\</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>-o tmp.sam</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">gofasta</span> sam toMultiAlign <span class="dt">\</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>-s tmp.sam <span class="dt">\</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>-o {output}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<ul>
+<li><code>{input}</code> here is the <code>.fasta</code> file containing all consensus sequences and references you would like to align.</li>
+<li><code>{output}</code> is the name of the aligned fasta file (e.g.&nbsp;<code>consensus_with_ref_aligned.fasta</code>).</li>
+<li><code>{reference}</code> is the reference used to performe a reference based multiple alignment, use the same reference as we used for read mapping before.</li>
+</ul>
+<p>(<code>tmp.sam</code> can be deleted)</p>
 </section>
 <section id="generate-useful-stats" class="level2" data-number="4.2">
 <h2 data-number="4.2" class="anchored" data-anchor-id="generate-useful-stats"><span class="header-section-number">4.2</span> Generate useful stats</h2>
-<p>seqkit stats -T for raw, QC, trimmed and mapped.</p>
+<p>You can generate read stats with <code>seqkit stats -T</code> for the raw, QC, trimmed and mapped reads.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">seqkit</span> stats <span class="at">-T</span> {input} <span class="op">&gt;</span> {output}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If want to check the read stats for a mapping file, you can use the following:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> file <span class="kw">in</span> {input}<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="ex">samtools</span> fastq <span class="va">$file</span> <span class="kw">|</span> <span class="ex">seqkit</span> stats <span class="at">-T</span> <span class="at">--stdin-label</span> <span class="va">$file</span> <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-1</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span> <span class="op">&gt;</span> {output}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<ul>
+<li><code>{input}</code> is your mapping file.</li>
+<li><code>{output}</code> is a tab separated file .tsv with the read stats.</li>
+</ul>
 
 
 </section>

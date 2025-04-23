@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -157,8 +191,14 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#preparing-to-run-the-workflow" id="toc-preparing-to-run-the-workflow" class="nav-link active" data-scroll-target="#preparing-to-run-the-workflow"><span class="header-section-number">6.1</span> Preparing to run the workflow</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -182,8 +222,95 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Everything required (software, scripts) is available in the Singularity container. Go to the preparation chapter to see how to acquire this container.</p>
+</div>
+</div>
+<p>In the previous chapters, you learned how to perform each step of the amplicon data analysis pipeline manually. While this is a valuable learning experience, it’s not practical for analyzing large datasets or for ensuring reproducibility in the long term.</p>
+<p>We can make use of a tool called <a href="https://snakemake.readthedocs.io/en/stable/" target="_blank">Snakemake</a> to automate the previous steps into a single pipeline. With Snakemake, you can define the steps of your analysis in a <code>Snakefile</code> and then let Snakemake handle the execution, dependency management, and error handling.</p>
+<section id="preparing-to-run-the-workflow" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="preparing-to-run-the-workflow"><span class="header-section-number">6.1</span> Preparing to run the workflow</h2>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Something about raw read data structure…</p>
+</div>
+</div>
+<p>To run the automated workflow, you’ll need to make sure that your project directory is set up correctly.</p>
+<p>To make the project setup process even easier, we’ve created a simple command-line tool called <code>amplicon_project.py</code>. This tool automates the creation of the project directory, the sample configuration file (<code>sample.tsv</code>), and the general settings configuration file (<code>config.yaml</code>), guiding you through each step with clear prompts and error checking.</p>
+<p>The amplicon_project.py tool is built into the singularity container image. Instead of using <code>singularity shell</code>, we can use <code>singularity exec</code> to directly execute commands. Try accessing amplicon_project.py:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">singularity</span> exec naam_workflow.sif python /amplicon_project.py <span class="at">--help</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>usage: amplicon_project.py [-h] [-p PROJECT_DIR] -n STUDY_NAME -d RAW_FASTQ_DIR -P PRIMER -r PRIMER_REFERENCE -R REFERENCE_GENOME [-m MIN_LENGTH] [-c COVERAGE] [-t THREADS] [--use_sars_cov_2_workflow]</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>Interactive tool for setting up a Snakemake project.</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>options:</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  -h, --help            show this help message and exit</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  -p PROJECT_DIR, --project_dir PROJECT_DIR</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                        Project directory path (default: current directory)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  -n STUDY_NAME, --study_name STUDY_NAME</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>                        Name of the study</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  -d RAW_FASTQ_DIR, --raw_fastq_dir RAW_FASTQ_DIR</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>                        Directory containing raw FASTQ files</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  -P PRIMER, --primer PRIMER</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>                        Fasta file containing primer sequences</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  -r PRIMER_REFERENCE, --primer_reference PRIMER_REFERENCE</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>                        Fasta file containing primer reference sequence</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  -R REFERENCE_GENOME, --reference_genome REFERENCE_GENOME</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                        Fasta file containing reference genome</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  -m MIN_LENGTH, --min_length MIN_LENGTH</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>                        Minimum read length (default: 1000)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  -c COVERAGE, --coverage COVERAGE</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>                        Minimum coverage required for consensus (default: 30)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  -t THREADS, --threads THREADS</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>                        Maximum number of threads for the Snakefile (default: 8)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  --use_sars_cov_2_workflow</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>                        Add this parameter if you want to analyze SARS-CoV-2 data</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now prepare your project directory with prepare_project.py as follows:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">singularity</span> exec <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> /mnt/viro0002:/mnt/viro0002 <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="va">$HOME</span>:<span class="va">$HOME</span> <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="va">$PWD</span>:<span class="va">$PWD</span> <span class="dt">\</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  naam_workflow.sif <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  python /amplicon_project.py <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">-p</span> {project.folder} <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">-n</span> {name} <span class="dt">\</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">-d</span> {reads} <span class="dt">\</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">-m</span> {min_length} <span class="dt">\</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">-c</span> {coverage} <span class="dt">\</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">-P</span> {primer} <span class="dt">\</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">-r</span> {primer.reference} <span class="dt">\</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">-R</span> {reference} <span class="dt">\</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t</span> {threads}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<ul>
+<li><code>{project.folder}</code> is your project folder. This is where you run your workflow and store results.</li>
+<li><code>{name}</code> is the name of your study, no spaces allowed.</li>
+<li><code>{reads}</code> is the folder that contains your raw .fastq.gz files.</li>
+<li><code>{min_length}</code> is the minimum length required for the reads to be accepted. This must be below the expected size of the amplicon, for example, for the 2500nt mpox amplicon we use a threshold of 1000</li>
+<li><code>{coverage}</code> is the minimum coverage required, anything lower than 30 is not recommended, for low accuracy basecalling, higher coverage is recommended.</li>
+<li><code>{primer}</code> is the file containing the primer sequences</li>
+<li><code>{primer.reference}</code> is the reference sequence .fasta file used for primer trimming.</li>
+<li><code>{reference}</code> is the reference sequence .fasta file used for the consensus generation.</li>
+</ul>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
