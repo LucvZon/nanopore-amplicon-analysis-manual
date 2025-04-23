@@ -1,3 +1,83 @@
----
-title: "Automating data analysis"
----
+# Automating data analysis
+
+::: callout-important
+Everything required (software, scripts) is available in the Singularity container. Go to the preparation chapter to see how to acquire this container.
+:::
+
+In the previous chapters, you learned how to perform each step of the amplicon data analysis pipeline manually. While this is a valuable learning experience, it's not practical for analyzing large datasets or for ensuring reproducibility in the long term.
+
+We can make use of a tool called [Snakemake](https://snakemake.readthedocs.io/en/stable/){target="_blank"} to automate the previous steps into a single pipeline. With Snakemake, you can define the steps of your analysis in a `Snakefile` and then let Snakemake handle the execution, dependency management, and error handling.
+
+## Preparing to run the workflow
+
+::: callout-important
+Something about raw read data structure...
+:::
+
+To run the automated workflow, you'll need to make sure that your project directory is set up correctly.
+
+To make the project setup process even easier, we've created a simple command-line tool called `amplicon_project.py`. This tool automates the creation of the project directory, the sample configuration file (`sample.tsv`), and the general settings configuration file (`config.yaml`), guiding you through each step with clear prompts and error checking.
+
+The amplicon_project.py tool is built into the singularity container image. Instead of using `singularity shell`, we can use `singularity exec` to directly execute commands. Try accessing amplicon_project.py:
+
+``` bash
+singularity exec naam_workflow.sif python /amplicon_project.py --help
+```
+
+```default
+usage: amplicon_project.py [-h] [-p PROJECT_DIR] -n STUDY_NAME -d RAW_FASTQ_DIR -P PRIMER -r PRIMER_REFERENCE -R REFERENCE_GENOME [-m MIN_LENGTH] [-c COVERAGE] [-t THREADS] [--use_sars_cov_2_workflow]
+
+Interactive tool for setting up a Snakemake project.
+
+options:
+  -h, --help            show this help message and exit
+  -p PROJECT_DIR, --project_dir PROJECT_DIR
+                        Project directory path (default: current directory)
+  -n STUDY_NAME, --study_name STUDY_NAME
+                        Name of the study
+  -d RAW_FASTQ_DIR, --raw_fastq_dir RAW_FASTQ_DIR
+                        Directory containing raw FASTQ files
+  -P PRIMER, --primer PRIMER
+                        Fasta file containing primer sequences
+  -r PRIMER_REFERENCE, --primer_reference PRIMER_REFERENCE
+                        Fasta file containing primer reference sequence
+  -R REFERENCE_GENOME, --reference_genome REFERENCE_GENOME
+                        Fasta file containing reference genome
+  -m MIN_LENGTH, --min_length MIN_LENGTH
+                        Minimum read length (default: 1000)
+  -c COVERAGE, --coverage COVERAGE
+                        Minimum coverage required for consensus (default: 30)
+  -t THREADS, --threads THREADS
+                        Maximum number of threads for the Snakefile (default: 8)
+  --use_sars_cov_2_workflow
+                        Add this parameter if you want to analyze SARS-CoV-2 data
+```
+
+Now prepare your project directory with prepare_project.py as follows:
+
+``` bash
+singularity exec \
+  --bind /mnt/viro0002:/mnt/viro0002 \
+  --bind $HOME:$HOME \
+  --bind $PWD:$PWD \
+  naam_workflow.sif \
+  python /amplicon_project.py \
+    -p {project.folder} \
+    -n {name} \
+    -d {reads} \
+    -m {min_length} \
+    -c {coverage} \
+    -P {primer} \
+    -r {primer.reference} \
+    -R {reference} \
+    -t {threads}
+```
+
+- `{project.folder}` is your project folder. This is where you run your workflow and store results.
+- `{name}` is the name of your study, no spaces allowed.
+- `{reads}` is the folder that contains your raw .fastq.gz files.
+- `{min_length}` is the minimum length required for the reads to be accepted. This must be below the expected size of the amplicon, for example, for the 2500nt mpox amplicon we use a threshold of 1000
+- `{coverage}` is the minimum coverage required, anything lower than 30 is not recommended, for low accuracy basecalling, higher coverage is recommended.
+- `{primer}` is the file containing the primer sequences
+- `{primer.reference}` is the reference sequence .fasta file used for primer trimming.
+- `{reference}` is the reference sequence .fasta file used for the consensus generation.

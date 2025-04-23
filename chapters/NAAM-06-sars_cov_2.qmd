@@ -1,3 +1,21 @@
 # Extra: SARS-CoV-2 analysis
 
 If you are dealing with SARS-Cov-2 data, then you can expand the analysis as follows...
+
+```bash
+pangolin {input} --outfile {output}
+```
+
+- `{input}` (all_consensus.fasta)
+- `{output}` (pangolin.csv)
+
+
+## To be added...
+
+Here are some of the snakemake rules that are currently excluded:
+
+- create_depth_file
+- create_vcf
+- annotate_vcf
+- filter_vcf
+- create_filtered_vcf_tables
