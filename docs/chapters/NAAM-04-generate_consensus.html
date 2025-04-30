@@ -178,7 +178,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-06-sars_cov_2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Extra: SARS-CoV-2 analysis</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -244,7 +244,7 @@ Note
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-bF</span> 4 <span class="at">-</span> <span class="kw">|</span> <span class="ex">samtools</span> sort <span class="at">-@</span> {threads} <span class="at">-</span> <span class="op">&gt;</span> {output}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <ul>
 <li><code>{reference}</code> is the fasta file containing the preferred reference.</li>
-<li><code>{input}</code> is the trimmed fastq file from section 2.4.</li>
+<li><code>{input}</code> is the trimmed fastq file from step 2.4.</li>
 <li><code>{output}</code> is the mapping file, it could be named something like <code>barcode01_mapped.bam</code></li>
 </ul>
 </section>
@@ -266,7 +266,7 @@ Note
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>-af 0.1 <span class="dt">\</span></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>-c {threads}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <ul>
-<li><code>{input}</code> is the mapping bam file from the previous step.</li>
+<li><code>{input}</code> is the mapping bam file from step 3.1.</li>
 <li><code>{output}</code> is the fasta file containing the consensus sequence (e.g.&nbsp;<code>barcode01_consensus.fasta</code>)</li>
 <li><code>{name}</code> is the custom name of your sequence that will be used in the fasta file (e.g.&nbsp;<code>barcode01_consensus</code>)</li>
 <li><code>{reference}</code> is the fasta file containing the preferred reference, the same as in the previous step.</li>

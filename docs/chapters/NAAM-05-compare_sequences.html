@@ -178,7 +178,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-06-sars_cov_2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Extra: SARS-CoV-2 analysis</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -256,9 +256,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="ex">samtools</span> fastq <span class="va">$file</span> <span class="kw">|</span> <span class="ex">seqkit</span> stats <span class="at">-T</span> <span class="at">--stdin-label</span> <span class="va">$file</span> <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-1</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span> <span class="op">&gt;</span> {output}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <ul>
-<li><code>{input}</code> is your mapping file.</li>
-<li><code>{output}</code> is a tab separated file .tsv with the read stats.</li>
+<li><code>{input}</code> is your fastq or bam file.</li>
+<li><code>{output}</code> is a tab separated (.tsv) file with the read stats.</li>
 </ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you are not analyzing SARS-CoV-2 data, then you can skip the next chapter and go to the final chapter to automate all of the steps we’ve previously discussed.</p>
+</div>
+</div>
 
 
 </section>
@@ -832,8 +845,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../chapters/NAAM-06-sars_cov_2.html" class="pagination-link" aria-label="Extra: SARS-CoV-2 analysis">
-        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Extra: SARS-CoV-2 analysis</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../chapters/NAAM-06-sars_cov_2.html" class="pagination-link" aria-label="SARS-CoV-2 analysis">
+        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

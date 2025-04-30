@@ -178,7 +178,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-06-sars_cov_2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Extra: SARS-CoV-2 analysis</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -284,7 +284,7 @@ Important!
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>--length_required {min_length} <span class="dt">\</span></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>-w {threads}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <ul>
-<li><code>{input}</code> is the merged file from section 2.1.</li>
+<li><code>{input}</code> is the merged file from step 2.1.</li>
 <li><code>{output}</code> is the the quality controlled <code>.fastq</code> filename (e.g.&nbsp;<code>all_barcode01_QC.fastq</code>).</li>
 <li><code>{report}</code> is the QC report filename, containing various details about the quality of the data before and after processing.</li>
 <li><code>{min_length}</code> is the expected size of your amplicons, to remove very short “rubbish” reads, generally the advise is to set it a bit lower than the expected size. Based on the QC report, which lists the number of removed reads you may adjust this setting, if too many reads are removed.</li>
@@ -310,7 +310,7 @@ Note
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-bF</span> 4 <span class="at">-</span> <span class="kw">|</span> <span class="ex">samtools</span> sort <span class="at">-@</span> {threads} <span class="at">-</span> <span class="op">&gt;</span> {output}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <ul>
 <li><code>{reference}</code> is the fasta file containing the reference that your primers should be able to map to.</li>
-<li><code>{input}</code> is the QC fastq file from section 2.2.</li>
+<li><code>{input}</code> is the QC fastq file from step 2.2.</li>
 <li><code>{output}</code> is the mapping file, it could be named something like <code>barcode01_QCmapped.bam</code></li>
 </ul>
 </section>
@@ -332,7 +332,7 @@ Note
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> sort {output.clipped}_ <span class="op">&gt;</span> {output.clipped}</span>
 <span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> {output.clipped}_</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <ul>
-<li><code>{input.mapped}</code> is the mapping file created in section 2.3.</li>
+<li><code>{input.mapped}</code> is the mapping file created in step 2.3.</li>
 <li><code>{output.clipped}</code> is the mapping file processed to clip the primer sequences off (e.g.&nbsp;<code>barcode01_clipped.bam</code>).</li>
 <li><code>{output.trimmed}</code> is the trimmed fastq file, this contains all reads mapped to the reference with primer sequences trimmed off (e.g.&nbsp;<code>barcode01_trimmed.bam</code>).</li>
 <li><code>{primers}</code> is the name of the primer sequence fasta file. Make sure names of the primers have either ‘LEFT’ or ‘RIGHT’ in their name to specify if it is a left or right side primer.</li>

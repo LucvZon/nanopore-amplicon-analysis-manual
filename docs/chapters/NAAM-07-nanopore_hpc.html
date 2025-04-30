@@ -177,7 +177,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-06-sars_cov_2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Extra: SARS-CoV-2 analysis</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -197,6 +197,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#preparing-to-run-the-workflow" id="toc-preparing-to-run-the-workflow" class="nav-link active" data-scroll-target="#preparing-to-run-the-workflow"><span class="header-section-number">6.1</span> Preparing to run the workflow</a></li>
+  <li><a href="#running-the-workflow" id="toc-running-the-workflow" class="nav-link" data-scroll-target="#running-the-workflow"><span class="header-section-number">6.2</span> Running the workflow</a></li>
   </ul>
 </nav>
     </div>
@@ -239,19 +240,6 @@ Important
 <p>We can make use of a tool called <a href="https://snakemake.readthedocs.io/en/stable/" target="_blank">Snakemake</a> to automate the previous steps into a single pipeline. With Snakemake, you can define the steps of your analysis in a <code>Snakefile</code> and then let Snakemake handle the execution, dependency management, and error handling.</p>
 <section id="preparing-to-run-the-workflow" class="level2" data-number="6.1">
 <h2 data-number="6.1" class="anchored" data-anchor-id="preparing-to-run-the-workflow"><span class="header-section-number">6.1</span> Preparing to run the workflow</h2>
-<div class="callout callout-style-default callout-important callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Important
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>Something about raw read data structure…</p>
-</div>
-</div>
 <p>To run the automated workflow, you’ll need to make sure that your project directory is set up correctly.</p>
 <p>To make the project setup process even easier, we’ve created a simple command-line tool called <code>amplicon_project.py</code>. This tool automates the creation of the project directory, the sample configuration file (<code>sample.tsv</code>), and the general settings configuration file (<code>config.yaml</code>), guiding you through each step with clear prompts and error checking.</p>
 <p>The amplicon_project.py tool is built into the singularity container image. Instead of using <code>singularity shell</code>, we can use <code>singularity exec</code> to directly execute commands. Try accessing amplicon_project.py:</p>
@@ -301,13 +289,47 @@ Important
 <ul>
 <li><code>{project.folder}</code> is your project folder. This is where you run your workflow and store results.</li>
 <li><code>{name}</code> is the name of your study, no spaces allowed.</li>
-<li><code>{reads}</code> is the folder that contains your raw .fastq.gz files.</li>
+<li><code>{reads}</code> is the folder that contains your barcode directories (e.g.&nbsp;barcode01, barcode02).</li>
 <li><code>{min_length}</code> is the minimum length required for the reads to be accepted. This must be below the expected size of the amplicon, for example, for the 2500nt mpox amplicon we use a threshold of 1000</li>
 <li><code>{coverage}</code> is the minimum coverage required, anything lower than 30 is not recommended, for low accuracy basecalling, higher coverage is recommended.</li>
 <li><code>{primer}</code> is the file containing the primer sequences</li>
 <li><code>{primer.reference}</code> is the reference sequence .fasta file used for primer trimming.</li>
 <li><code>{reference}</code> is the reference sequence .fasta file used for the consensus generation.</li>
 </ul>
+<p>Please use absolute paths for the reads, primers and references so that they can always be located.</p>
+<p>The <code>--bind</code> arguments are needed to explicitly tell Singularity to mount the necessary host directories into the container. The part before the colon is the path on the host machine that you want to make available. The path after the colon is the path inside the container where the host directory should be mounted.</p>
+<p>As a default, Singularity often automatically binds your home directory (<code>$HOME</code>) and the current directory (<code>$PWD</code>). We also explicitly bind <code>/mnt/viro0002</code> in this example. If your input files (reads, reference, databases) or output project directory reside outside these locations, you MUST add specific <code>--bind /host/path:/container/path</code> options for those locations, otherwise the container won’t be able to find them.</p>
+<p>Once the setup is completed, move to your newly created project directory with <code>cd</code>, check where you are with <code>pwd</code>.</p>
+<p>Next, use the <code>ls</code> command to list the files in the project directory and check if the following files are present: <code>sample.tsv</code>, <code>config.yaml</code> and <code>Snakefile</code>.</p>
+<ul>
+<li><p>The <strong>sample.tsv</strong> should have 8 columns:</p>
+<ul>
+<li><code>unique_id</code>: the unique sample name that’s generated based on the barcode directories.</li>
+<li><code>sequence_name</code>: the name given to the consensus sequence at the end of the pipeline. It’s generated with the following template: {study_name}_{unique_id}.</li>
+<li><code>fastq_path</code>: the location of the raw .fastq.gz files per sample.</li>
+<li><code>reference</code>: the location of the reference sequence for the consensus generation.</li>
+<li><code>primers</code>: the location of the file containing the primer sequences.</li>
+<li><code>primer_reference</code>: the location of the reference sequence for primer trimming.</li>
+<li><code>coverage</code>: minimum coverage required.</li>
+<li><code>min_length</code>: minimum length required.</li>
+</ul></li>
+<li><p>The <strong>config.yaml</strong> determines if the SARS_CoV_2 section of the workflow is enabled and the amount of default threads to use.</p></li>
+<li><p>The <strong>Snakefile</strong> is the “recipe” for the workflow, describing all the steps we have done by hand, and it is most commonly placed in the root directory of your project (you can open the Snakefile with a text editor and have a look).</p></li>
+</ul>
+</section>
+<section id="running-the-workflow" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="running-the-workflow"><span class="header-section-number">6.2</span> Running the workflow</h2>
+<p>After setting everything up, we can redo the analysis for all samples in a single step. First we will test out a dry run to see if any errors appear. A dry run will not execute any of the commands but will instead display what would be done. This will help identify any errors in the Snakemake file.</p>
+<p>Run inside of your project directory:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">singularity</span> exec <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> /mnt/viro0002:/mnt/viro0002 <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="va">$HOME</span>:<span class="va">$HOME</span> <span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="va">$PWD</span>:<span class="va">$PWD</span> <span class="dt">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  naam_workflow.sif <span class="dt">\</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  snakemake <span class="at">--snakefile</span> Snakefile <span class="dt">\</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cores</span> {threads} <span class="dt">\</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dryrun</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If no errors appear, then remove the <code>--dryrun</code> argument and run it again to fully execute the workflow.</p>
 
 
 </section>
@@ -876,8 +898,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../chapters/NAAM-06-sars_cov_2.html" class="pagination-link" aria-label="Extra: SARS-CoV-2 analysis">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Extra: SARS-CoV-2 analysis</span></span>
+      <a href="../chapters/NAAM-06-sars_cov_2.html" class="pagination-link" aria-label="SARS-CoV-2 analysis">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

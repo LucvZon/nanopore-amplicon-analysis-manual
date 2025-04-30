@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>5&nbsp; Extra: SARS-CoV-2 analysis – Nanopore amplicon data analysis</title>
+<title>5&nbsp; SARS-CoV-2 analysis – Nanopore amplicon data analysis</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -117,7 +117,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/NAAM-06-sars_cov_2.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Extra: SARS-CoV-2 analysis</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/NAAM-06-sars_cov_2.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -178,7 +178,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-06-sars_cov_2.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Extra: SARS-CoV-2 analysis</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -206,7 +206,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Extra: SARS-CoV-2 analysis</span></h1>
+<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></h1>
 </div>
 
 
@@ -223,11 +223,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>If you are dealing with SARS-Cov-2 data, then you can expand the analysis as follows…</p>
+<p>If you are dealing with SARS-Cov-2 data, then you can run the <a href="https://github.com/cov-lineages/pangolin">pangolin software</a> to submit your SARS-CoV-2 genome sequences which then are compared with other genome sequences and assigned the most likely lineage.</p>
+<p>Execute the following:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pangolin</span> {input} <span class="at">--outfile</span> {output}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <ul>
-<li><code>{input}</code> (all_consensus.fasta)</li>
-<li><code>{output}</code> (pangolin.csv)</li>
+<li><code>{input}</code> is your aggregated consensus fasta file from step X.X.</li>
+<li><code>{output}</code> is a .csv file that contains taxon name and lineage assigned per fasta sequence. Read more about the output format: <a href="https://cov-lineages.org/resources/pangolin/output.html">https://cov-lineages.org/resources/pangolin/output.html</a></li>
 </ul>
 <section id="to-be-added" class="level2" data-number="5.1">
 <h2 data-number="5.1" class="anchored" data-anchor-id="to-be-added"><span class="header-section-number">5.1</span> To be added…</h2>
@@ -239,6 +240,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>filter_vcf</li>
 <li>create_filtered_vcf_tables</li>
 </ul>
+<p>These rules are exclusively for analysis of SARS-Cov-2 data and will be implemented into the container workflow in the near future.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You can now move to the final chapter to automate all of the steps we’ve previously discussed.</p>
+</div>
+</div>
 
 
 </section>
