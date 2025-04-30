@@ -1,0 +1,67 @@
+Bootstrap: docker
+From: continuumio/miniconda3
+
+%files
+    # Relative paths from where you run 'singularity build'
+    ../envs/naam.tar.gz /naam.tar.gz
+    ../python/amplicon_project.py /amplicon_project.py
+    ../workflows/snakefile_naam.smk /snakefile_naam.smk
+
+
+%post
+    # Define the target environment path using the standard container location
+    TARGET_ENV_PATH="/opt/conda/envs/naam"
+
+    # Verbose output and exit on error - good for debugging builds
+    set -ex
+
+    echo "--- Creating target directory: ${TARGET_ENV_PATH} ---"
+    mkdir -p "${TARGET_ENV_PATH}"
+    ls -ld /opt/conda/ /opt/conda/envs/ # Verify parent exists
+
+    echo "--- Extracting tarball /naam.tar.gz to ${TARGET_ENV_PATH} ---"
+    tar -xzf /naam.tar.gz -C "${TARGET_ENV_PATH}"
+    echo "--- Contents of target directory after tar: ---"
+    ls -l "${TARGET_ENV_PATH}"
+
+    echo "--- Running conda-unpack using Python from the unpacked env ---"
+    "${TARGET_ENV_PATH}/bin/python" "${TARGET_ENV_PATH}/bin/conda-unpack"
+    echo "--- conda-unpack finished ---"
+
+    echo "--- Cleaning up tarball ---"
+    rm /naam.tar.gz
+
+    # --- Modify /etc/bash.bashrc for interactive shells ---
+    echo "--- Adding conda activation to /etc/bash.bashrc ---"
+    # Use cat with a here-document to append the lines robustly
+    cat << EOF >> /etc/bash.bashrc
+
+# Added by Singularity build for automatic Conda environment activation
+if [ -f "/opt/conda/etc/profile.d/conda.sh" ]; then
+    . "/opt/conda/etc/profile.d/conda.sh"
+    conda activate myenv
+else
+    echo "WARNING: Conda setup script not found (/opt/conda/etc/profile.d/conda.sh)" >> /dev/stderr
+fi
+EOF
+    # Note: The final 'EOF' MUST be at the beginning of the line with no spaces before it.
+
+    echo "--- Contents of /etc/bash.bashrc after modification: ---"
+    cat /etc/bash.bashrc
+    echo "--- End of /etc/bash.bashrc content ---"
+
+    echo "--- %post section completed ---"
+
+
+# --- Keep the %environment section focused on PATH for exec/run ---
+%environment
+    # Define the environment's bin directory (for clarity)
+    ENV_BIN_DIR="/opt/conda/envs/naam/bin"
+
+    # Prepend the environment's bin directory to the PATH
+    # This ensures tools from 'myenv' are found first.
+    export PATH="${ENV_BIN_DIR}:${PATH}"
+
+    # Optional: Handle LD_LIBRARY_PATH if needed
+    # ENV_LIB_DIR="/opt/conda/envs/naam/lib"
+    # export LD_LIBRARY_PATH="${ENV_LIB_DIR}:${LD_LIBRARY_PATH}"

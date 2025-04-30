@@ -1,0 +1,19 @@
+channels:
+- conda-forge
+- bioconda
+- defaults
+dependencies:
+- bioconda::samtools=1.21
+- conda-forge::pandas=2.2.3
+- bioconda::vcftools=0.1.16
+- bioconda::minimap2=2.28
+- bioconda::gofasta=1.2.3
+- bioconda::fastp=0.24.1
+- bioconda::seqkit=2.10.0
+- conda-forge::python=3.10
+- conda-forge::biopython=1.85
+- bioconda::pysam=0.22.0
+# Downgraded Snakemake version to ensure compatibility with pangolin
+- bioconda::snakemake=7.32.4
+- bioconda::pangolin=4.3.1
+name: naam
