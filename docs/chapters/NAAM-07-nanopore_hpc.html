@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>6&nbsp; Automating data analysis – Nanopore amplicon data analysis</title>
+<title>6. Automating data analysis – Nanopore amplicon data analysis</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -116,7 +116,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/NAAM-07-nanopore_hpc.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Automating data analysis</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/NAAM-07-nanopore_hpc.html">6. Automating data analysis</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -153,37 +153,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-02-preparation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparation</span></span></a>
+ <span class="menu-text">1. Preparation</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-03-quality_control.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Quality control</span></span></a>
+ <span class="menu-text">2. Quality control</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-04-generate_consensus.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Generating a Consensus Sequence</span></span></a>
+ <span class="menu-text">3. Generating a Consensus Sequence</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-05-compare_sequences.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Comparing sequence to reference sequences</span></span></a>
+ <span class="menu-text">4. Comparing sequence to reference sequences</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-06-sars_cov_2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span></a>
+ <span class="menu-text">5. SARS-CoV-2 analysis</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-07-nanopore_hpc.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Automating data analysis</span></span></a>
+ <span class="menu-text">6. Automating data analysis</span></a>
   </div>
 </li>
     </ul>
@@ -196,8 +196,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#preparing-to-run-the-workflow" id="toc-preparing-to-run-the-workflow" class="nav-link active" data-scroll-target="#preparing-to-run-the-workflow"><span class="header-section-number">6.1</span> Preparing to run the workflow</a></li>
-  <li><a href="#running-the-workflow" id="toc-running-the-workflow" class="nav-link" data-scroll-target="#running-the-workflow"><span class="header-section-number">6.2</span> Running the workflow</a></li>
+  <li><a href="#preparing-to-run-the-workflow" id="toc-preparing-to-run-the-workflow" class="nav-link active" data-scroll-target="#preparing-to-run-the-workflow">6.1 Preparing to run the workflow</a></li>
+  <li><a href="#running-the-workflow" id="toc-running-the-workflow" class="nav-link" data-scroll-target="#running-the-workflow">6.2 Running the workflow</a></li>
   </ul>
 </nav>
     </div>
@@ -206,7 +206,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Automating data analysis</span></h1>
+<h1 class="title">6. Automating data analysis</h1>
 </div>
 
 
@@ -238,8 +238,8 @@ Important
 </div>
 <p>In the previous chapters, you learned how to perform each step of the amplicon data analysis pipeline manually. While this is a valuable learning experience, it’s not practical for analyzing large datasets or for ensuring reproducibility in the long term.</p>
 <p>We can make use of a tool called <a href="https://snakemake.readthedocs.io/en/stable/" target="_blank">Snakemake</a> to automate the previous steps into a single pipeline. With Snakemake, you can define the steps of your analysis in a <code>Snakefile</code> and then let Snakemake handle the execution, dependency management, and error handling.</p>
-<section id="preparing-to-run-the-workflow" class="level2" data-number="6.1">
-<h2 data-number="6.1" class="anchored" data-anchor-id="preparing-to-run-the-workflow"><span class="header-section-number">6.1</span> Preparing to run the workflow</h2>
+<section id="preparing-to-run-the-workflow" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="preparing-to-run-the-workflow">6.1 Preparing to run the workflow</h2>
 <p>To run the automated workflow, you’ll need to make sure that your project directory is set up correctly.</p>
 <p>To make the project setup process even easier, we’ve created a simple command-line tool called <code>amplicon_project.py</code>. This tool automates the creation of the project directory, the sample configuration file (<code>sample.tsv</code>), and the general settings configuration file (<code>config.yaml</code>), guiding you through each step with clear prompts and error checking.</p>
 <p>The amplicon_project.py tool is built into the singularity container image. Instead of using <code>singularity shell</code>, we can use <code>singularity exec</code> to directly execute commands. Try accessing amplicon_project.py:</p>
@@ -317,8 +317,8 @@ Important
 <li><p>The <strong>Snakefile</strong> is the “recipe” for the workflow, describing all the steps we have done by hand, and it is most commonly placed in the root directory of your project (you can open the Snakefile with a text editor and have a look).</p></li>
 </ul>
 </section>
-<section id="running-the-workflow" class="level2" data-number="6.2">
-<h2 data-number="6.2" class="anchored" data-anchor-id="running-the-workflow"><span class="header-section-number">6.2</span> Running the workflow</h2>
+<section id="running-the-workflow" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="running-the-workflow">6.2 Running the workflow</h2>
 <p>After setting everything up, we can redo the analysis for all samples in a single step. First we will test out a dry run to see if any errors appear. A dry run will not execute any of the commands but will instead display what would be done. This will help identify any errors in the Snakemake file.</p>
 <p>Run inside of your project directory:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">singularity</span> exec <span class="dt">\</span></span>
@@ -898,8 +898,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../chapters/NAAM-06-sars_cov_2.html" class="pagination-link" aria-label="SARS-CoV-2 analysis">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span>
+      <a href="../chapters/NAAM-06-sars_cov_2.html" class="pagination-link" aria-label="5. SARS-CoV-2 analysis">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">5. SARS-CoV-2 analysis</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

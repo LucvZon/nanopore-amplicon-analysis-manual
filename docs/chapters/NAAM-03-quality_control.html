@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>2&nbsp; Quality control – Nanopore amplicon data analysis</title>
+<title>2. Quality control – Nanopore amplicon data analysis</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -117,7 +117,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/NAAM-03-quality_control.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Quality control</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/NAAM-03-quality_control.html">2. Quality control</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -154,37 +154,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-02-preparation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparation</span></span></a>
+ <span class="menu-text">1. Preparation</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-03-quality_control.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Quality control</span></span></a>
+ <span class="menu-text">2. Quality control</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-04-generate_consensus.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Generating a Consensus Sequence</span></span></a>
+ <span class="menu-text">3. Generating a Consensus Sequence</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-05-compare_sequences.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Comparing sequence to reference sequences</span></span></a>
+ <span class="menu-text">4. Comparing sequence to reference sequences</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-06-sars_cov_2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span></a>
+ <span class="menu-text">5. SARS-CoV-2 analysis</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-07-nanopore_hpc.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Automating data analysis</span></span></a>
+ <span class="menu-text">6. Automating data analysis</span></a>
   </div>
 </li>
     </ul>
@@ -197,10 +197,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#merging-and-decompressing-fastq" id="toc-merging-and-decompressing-fastq" class="nav-link active" data-scroll-target="#merging-and-decompressing-fastq"><span class="header-section-number">2.1</span> Merging and decompressing FASTQ</a></li>
-  <li><a href="#running-fastp-quality-control-software" id="toc-running-fastp-quality-control-software" class="nav-link" data-scroll-target="#running-fastp-quality-control-software"><span class="header-section-number">2.2</span> Running fastp quality control software</a></li>
-  <li><a href="#mapping-reads-to-primer-reference" id="toc-mapping-reads-to-primer-reference" class="nav-link" data-scroll-target="#mapping-reads-to-primer-reference"><span class="header-section-number">2.3</span> Mapping reads to primer reference</a></li>
-  <li><a href="#trimming-primers-using-ampliclip" id="toc-trimming-primers-using-ampliclip" class="nav-link" data-scroll-target="#trimming-primers-using-ampliclip"><span class="header-section-number">2.4</span> Trimming primers using Ampliclip</a></li>
+  <li><a href="#merging-and-decompressing-fastq" id="toc-merging-and-decompressing-fastq" class="nav-link active" data-scroll-target="#merging-and-decompressing-fastq">2.1 Merging and decompressing FASTQ</a></li>
+  <li><a href="#running-fastp-quality-control-software" id="toc-running-fastp-quality-control-software" class="nav-link" data-scroll-target="#running-fastp-quality-control-software">2.2 Running fastp quality control software</a></li>
+  <li><a href="#mapping-reads-to-primer-reference" id="toc-mapping-reads-to-primer-reference" class="nav-link" data-scroll-target="#mapping-reads-to-primer-reference">2.3 Mapping reads to primer reference</a></li>
+  <li><a href="#trimming-primers-using-ampliclip" id="toc-trimming-primers-using-ampliclip" class="nav-link" data-scroll-target="#trimming-primers-using-ampliclip">2.4 Trimming primers using Ampliclip</a></li>
   </ul>
 </nav>
     </div>
@@ -209,7 +209,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Quality control</span></h1>
+<h1 class="title">2. Quality control</h1>
 </div>
 
 
@@ -262,8 +262,8 @@ Important!
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> results/assembly</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>To use the required tools, activate the Singularity container as follows:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">singularity</span> shell naam_workflow.sif</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<section id="merging-and-decompressing-fastq" class="level2" data-number="2.1">
-<h2 data-number="2.1" class="anchored" data-anchor-id="merging-and-decompressing-fastq"><span class="header-section-number">2.1</span> Merging and decompressing FASTQ</h2>
+<section id="merging-and-decompressing-fastq" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="merging-and-decompressing-fastq">2.1 Merging and decompressing FASTQ</h2>
 <p>Any file in linux can be pasted to another file using the cat command. zcat in addition also unzips gzipped files (e.g.&nbsp;.fastq.gz extension). If your files are already unzipped, use cat instead.</p>
 <p><strong>Modify and run:</strong></p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> {input.folder}/<span class="pp">*</span>.fastq.gz <span class="op">&gt;</span> {output}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -272,8 +272,8 @@ Important!
 <li><code>{output}</code> should be the name of the combined unzipped fastq file (e.g.&nbsp;all_barcode01.fastq).</li>
 </ul>
 </section>
-<section id="running-fastp-quality-control-software" class="level2" data-number="2.2">
-<h2 data-number="2.2" class="anchored" data-anchor-id="running-fastp-quality-control-software"><span class="header-section-number">2.2</span> Running fastp quality control software</h2>
+<section id="running-fastp-quality-control-software" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="running-fastp-quality-control-software">2.2 Running fastp quality control software</h2>
 <p>The <a href="https://github.com/OpenGene/fastp" target="_blank">fastp</a> software is a very fast multipurpose quality control software to perform quality and sequence adapter trimming for Illumina short-read and Nanopore long-read data.</p>
 <p>Because we are processing Nanopore data, several quality control options have to be disabled. The only requirement we set is a minimum median phred quality score of the read of 10 and a minimum length of around the size of the amplicon (e.g.&nbsp;400 nucleotides).</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">fastp</span> <span class="at">-i</span> {input} <span class="at">-o</span> {output} <span class="at">-j</span> /dev/null <span class="at">-h</span> {report} <span class="dt">\</span></span>
@@ -303,8 +303,8 @@ Note
 </div>
 </div>
 </section>
-<section id="mapping-reads-to-primer-reference" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="mapping-reads-to-primer-reference"><span class="header-section-number">2.3</span> Mapping reads to primer reference</h2>
+<section id="mapping-reads-to-primer-reference" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="mapping-reads-to-primer-reference">2.3 Mapping reads to primer reference</h2>
 <p>To precisely trim the primers we map the reads to a reference sequence based on which the primers were designed. This is to make sure, when looking for the primer locations, all primer location can be found. To map the reads we use <a href="https://github.com/lh3/minimap2">minimap2</a> with the <code>-x map-ont</code> option for ONT reads. <code>-Y</code> ensures reads are not hardclipped. Afterwards we use <a href="https://www.htslib.org/">samtools</a> to reduce the <code>.bam</code> (mapping) file to only those reads that mapped to the reference and sort the reads in mapping file based on mapping position, which is necessary to continue working with the file.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">minimap2</span> <span class="at">-Y</span> <span class="at">-t</span> {threads} <span class="at">-x</span> map-ont <span class="at">-a</span> {reference} {input} <span class="kw">|</span> <span class="dt">\</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-bF</span> 4 <span class="at">-</span> <span class="kw">|</span> <span class="ex">samtools</span> sort <span class="at">-@</span> {threads} <span class="at">-</span> <span class="op">&gt;</span> {output}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -314,8 +314,8 @@ Note
 <li><code>{output}</code> is the mapping file, it could be named something like <code>barcode01_QCmapped.bam</code></li>
 </ul>
 </section>
-<section id="trimming-primers-using-ampliclip" class="level2" data-number="2.4">
-<h2 data-number="2.4" class="anchored" data-anchor-id="trimming-primers-using-ampliclip"><span class="header-section-number">2.4</span> Trimming primers using Ampliclip</h2>
+<section id="trimming-primers-using-ampliclip" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="trimming-primers-using-ampliclip">2.4 Trimming primers using Ampliclip</h2>
 <p><a href="https://github.com/dnieuw/Ampliclip">Ampliclip</a> is a tool written by <a href="https://github.com/dnieuw/">David</a> to remove the primer sequences of nanopore amplicon reads. It works by mapping the primer sequences to a reference genome to find their location. Then it clips the reads mapped to the same reference (which we did in the previous step) by finding overlap between the primer location and the read ends. It allows for some “junk” in front of the primer location with <code>--padding</code> and mismatches between primer and reference <code>--mismatch</code>. After clipping it trims the reads and outputs a clipped <code>.bam</code> file and a trimmed <code>.fastq</code> file. <code>--minlength</code> can be set to remove any reads that, after trimming, have become shorter than this length. Set this to the value that was used in the QC section (e.g.&nbsp;400).</p>
 <p>After the trimming the clipped mapping file has to be sorted again.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index {input.mapped}</span>
@@ -922,13 +922,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../chapters/NAAM-02-preparation.html" class="pagination-link" aria-label="Preparation">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparation</span></span>
+      <a href="../chapters/NAAM-02-preparation.html" class="pagination-link" aria-label="1. Preparation">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">1. Preparation</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../chapters/NAAM-04-generate_consensus.html" class="pagination-link" aria-label="Generating a Consensus Sequence">
-        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Generating a Consensus Sequence</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../chapters/NAAM-04-generate_consensus.html" class="pagination-link" aria-label="3. Generating a Consensus Sequence">
+        <span class="nav-page-text">3. Generating a Consensus Sequence</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

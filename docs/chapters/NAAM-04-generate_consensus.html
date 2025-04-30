@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>3&nbsp; Generating a Consensus Sequence – Nanopore amplicon data analysis</title>
+<title>3. Generating a Consensus Sequence – Nanopore amplicon data analysis</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -117,7 +117,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/NAAM-04-generate_consensus.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Generating a Consensus Sequence</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/NAAM-04-generate_consensus.html">3. Generating a Consensus Sequence</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -154,37 +154,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-02-preparation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparation</span></span></a>
+ <span class="menu-text">1. Preparation</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-03-quality_control.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Quality control</span></span></a>
+ <span class="menu-text">2. Quality control</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-04-generate_consensus.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Generating a Consensus Sequence</span></span></a>
+ <span class="menu-text">3. Generating a Consensus Sequence</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-05-compare_sequences.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Comparing sequence to reference sequences</span></span></a>
+ <span class="menu-text">4. Comparing sequence to reference sequences</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-06-sars_cov_2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">SARS-CoV-2 analysis</span></span></a>
+ <span class="menu-text">5. SARS-CoV-2 analysis</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/NAAM-07-nanopore_hpc.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Automating data analysis</span></span></a>
+ <span class="menu-text">6. Automating data analysis</span></a>
   </div>
 </li>
     </ul>
@@ -197,8 +197,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#mapping-trimmed-reads-to-reference" id="toc-mapping-trimmed-reads-to-reference" class="nav-link active" data-scroll-target="#mapping-trimmed-reads-to-reference"><span class="header-section-number">3.1</span> Mapping trimmed reads to reference</a></li>
-  <li><a href="#creating-consensus-from-filtered-mutations" id="toc-creating-consensus-from-filtered-mutations" class="nav-link" data-scroll-target="#creating-consensus-from-filtered-mutations"><span class="header-section-number">3.2</span> Creating consensus from filtered mutations</a></li>
+  <li><a href="#mapping-trimmed-reads-to-reference" id="toc-mapping-trimmed-reads-to-reference" class="nav-link active" data-scroll-target="#mapping-trimmed-reads-to-reference">3.1 Mapping trimmed reads to reference</a></li>
+  <li><a href="#creating-consensus-from-filtered-mutations" id="toc-creating-consensus-from-filtered-mutations" class="nav-link" data-scroll-target="#creating-consensus-from-filtered-mutations">3.2 Creating consensus from filtered mutations</a></li>
   </ul>
 </nav>
     </div>
@@ -207,7 +207,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Generating a Consensus Sequence</span></h1>
+<h1 class="title">3. Generating a Consensus Sequence</h1>
 </div>
 
 
@@ -224,8 +224,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="mapping-trimmed-reads-to-reference" class="level2" data-number="3.1">
-<h2 data-number="3.1" class="anchored" data-anchor-id="mapping-trimmed-reads-to-reference"><span class="header-section-number">3.1</span> Mapping trimmed reads to reference</h2>
+<section id="mapping-trimmed-reads-to-reference" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="mapping-trimmed-reads-to-reference">3.1 Mapping trimmed reads to reference</h2>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -248,8 +248,8 @@ Note
 <li><code>{output}</code> is the mapping file, it could be named something like <code>barcode01_mapped.bam</code></li>
 </ul>
 </section>
-<section id="creating-consensus-from-filtered-mutations" class="level2" data-number="3.2">
-<h2 data-number="3.2" class="anchored" data-anchor-id="creating-consensus-from-filtered-mutations"><span class="header-section-number">3.2</span> Creating consensus from filtered mutations</h2>
+<section id="creating-consensus-from-filtered-mutations" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="creating-consensus-from-filtered-mutations">3.2 Creating consensus from filtered mutations</h2>
 <p><a href="https://github.com/dnieuw/Virconsens">Virconsens</a> is a tool written by <a href="https://github.com/dnieuw/">David</a> to create a consensus sequence from Nanopore amplicon reads mapped to a reference in a mapping <code>.bam</code> file.</p>
 <p>It works by reading the mapping file position-by-position and counting the mutations, insertions and deletions. The mutation or deletion (or original nucleotide from the reference) with the highest count is considered the “consensus” at that position.</p>
 <p>In the next step it filters positions with too low coverage based on the <code>mindepth</code> threshold or too low frequency based on the <code>minAF</code> threshold.</p>
@@ -853,13 +853,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../chapters/NAAM-03-quality_control.html" class="pagination-link" aria-label="Quality control">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Quality control</span></span>
+      <a href="../chapters/NAAM-03-quality_control.html" class="pagination-link" aria-label="2. Quality control">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">2. Quality control</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../chapters/NAAM-05-compare_sequences.html" class="pagination-link" aria-label="Comparing sequence to reference sequences">
-        <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Comparing sequence to reference sequences</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../chapters/NAAM-05-compare_sequences.html" class="pagination-link" aria-label="4. Comparing sequence to reference sequences">
+        <span class="nav-page-text">4. Comparing sequence to reference sequences</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
