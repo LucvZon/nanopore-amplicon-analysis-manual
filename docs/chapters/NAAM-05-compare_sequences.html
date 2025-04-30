@@ -226,7 +226,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="creating-multiple-sequence-alignment" class="level2" data-number="4.1">
 <h2 data-number="4.1" class="anchored" data-anchor-id="creating-multiple-sequence-alignment"><span class="header-section-number">4.1</span> Creating multiple sequence alignment</h2>
-<p>We can now create a multiple sequence alignment (MAF). (Not to be confused with a read alignment .bam file).</p>
+<p>We can now create a multiple sequence alignment (MSA). (Not to be confused with a read alignment .bam file).</p>
 <p>We can use a reference based multiple sequence alignment approach with minimap2 and gofasta. This is very fast and works well even for large genomes (e.g.&nbsp;200kb+) or many sequences (10,000+). However, gofasta does not perform a “real” multiple alignment, because it ignores insertions in the sequences compared to the reference and removes them. Therefore if insertions are expected and present in the sequences, they will have to be added manually. On the positive side, phylogenetic analysis tools, such as <a href="https://github.com/iqtree/iqtree2">IQTREE2</a>, also ignore any insertions, so for the phylogenetic analysis the removal of insertions does not matter.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">minimap2</span> <span class="at">-t</span> {threads} <span class="at">-a</span> <span class="dt">\</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>-x asm20 <span class="dt">\</span></span>
