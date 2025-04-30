@@ -10,10 +10,6 @@ We can make use of a tool called [Snakemake](https://snakemake.readthedocs.io/en
 
 ## Preparing to run the workflow
 
-::: callout-important
-Something about raw read data structure...
-:::
-
 To run the automated workflow, you'll need to make sure that your project directory is set up correctly.
 
 To make the project setup process even easier, we've created a simple command-line tool called `amplicon_project.py`. This tool automates the creation of the project directory, the sample configuration file (`sample.tsv`), and the general settings configuration file (`config.yaml`), guiding you through each step with clear prompts and error checking.
@@ -75,9 +71,52 @@ singularity exec \
 
 - `{project.folder}` is your project folder. This is where you run your workflow and store results.
 - `{name}` is the name of your study, no spaces allowed.
-- `{reads}` is the folder that contains your raw .fastq.gz files.
+- `{reads}` is the folder that contains your barcode directories (e.g. barcode01, barcode02).
 - `{min_length}` is the minimum length required for the reads to be accepted. This must be below the expected size of the amplicon, for example, for the 2500nt mpox amplicon we use a threshold of 1000
 - `{coverage}` is the minimum coverage required, anything lower than 30 is not recommended, for low accuracy basecalling, higher coverage is recommended.
 - `{primer}` is the file containing the primer sequences
 - `{primer.reference}` is the reference sequence .fasta file used for primer trimming.
 - `{reference}` is the reference sequence .fasta file used for the consensus generation.
+
+Please use absolute paths for the reads, primers and references so that they can always be located.
+
+The `--bind` arguments are needed to explicitly tell Singularity to mount the necessary host directories into the container. The part before the colon is the path on the host machine that you want to make available. The path after the colon is the path inside the container where the host directory should be mounted. 
+
+As a default, Singularity often automatically binds your home directory (`$HOME`) and the current directory (`$PWD`). We also explicitly bind `/mnt/viro0002` in this example. If your input files (reads, reference, databases) or output project directory reside outside these locations, you MUST add specific `--bind /host/path:/container/path` options for those locations, otherwise the container won't be able to find them.
+
+Once the setup is completed, move to your newly created project directory with `cd`, check where you are with `pwd`.
+
+Next, use the `ls` command to list the files in the project directory and check if the following files are present: `sample.tsv`, `config.yaml` and `Snakefile`.
+
+-   The **sample.tsv** should have 8 columns:
+    - `unique_id`: the unique sample name that's generated based on the barcode directories.
+    - `sequence_name`: the name given to the consensus sequence at the end of the pipeline. It's generated with the following template: {study_name}_{unique_id}.
+    - `fastq_path`: the location of the raw .fastq.gz files per sample.
+    - `reference`: the location of the reference sequence for the consensus generation.
+    - `primers`: the location of the file containing the primer sequences.
+    - `primer_reference`: the location of the reference sequence for primer trimming.
+    - `coverage`: minimum coverage required.
+    - `min_length`: minimum length required.
+
+-   The **config.yaml** determines if the SARS_CoV_2 section of the workflow is enabled and the amount of default threads to use.
+
+-   The **Snakefile** is the "recipe" for the workflow, describing all the steps we have done by hand, and it is most commonly placed in the root directory of your project (you can open the Snakefile with a text editor and have a look).
+
+## Running the workflow
+
+After setting everything up, we can redo the analysis for all samples in a single step. First we will test out a dry run to see if any errors appear. A dry run will not execute any of the commands but will instead display what would be done. This will help identify any errors in the Snakemake file.
+
+Run inside of your project directory:
+
+```bash
+singularity exec \
+  --bind /mnt/viro0002:/mnt/viro0002 \
+  --bind $HOME:$HOME \
+  --bind $PWD:$PWD \
+  naam_workflow.sif \
+  snakemake --snakefile Snakefile \
+  --cores {threads} \
+  --dryrun
+```
+
+If no errors appear, then remove the `--dryrun` argument and run it again to fully execute the workflow.

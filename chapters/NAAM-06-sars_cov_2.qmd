@@ -1,13 +1,14 @@
-# Extra: SARS-CoV-2 analysis
+# SARS-CoV-2 analysis
 
-If you are dealing with SARS-Cov-2 data, then you can expand the analysis as follows...
+If you are dealing with SARS-Cov-2 data, then you can run the [pangolin software](https://github.com/cov-lineages/pangolin) to submit your SARS-CoV-2 genome sequences which then are compared with other genome sequences and assigned the most likely lineage.
 
+Execute the following:
 ```bash
 pangolin {input} --outfile {output}
 ```
 
-- `{input}` (all_consensus.fasta)
-- `{output}` (pangolin.csv)
+- `{input}` is your aggregated consensus fasta file from step X.X.
+- `{output}` is a .csv file that contains taxon name and lineage assigned per fasta sequence. Read more about the output format: [https://cov-lineages.org/resources/pangolin/output.html](https://cov-lineages.org/resources/pangolin/output.html)
 
 
 ## To be added...
@@ -19,3 +20,9 @@ Here are some of the snakemake rules that are currently excluded:
 - annotate_vcf
 - filter_vcf
 - create_filtered_vcf_tables
+
+These rules are exclusively for analysis of SARS-Cov-2 data and will be implemented into the container workflow in the near future.
+
+::: {.callout-note}
+You can now move to the final chapter to automate all of the steps we’ve previously discussed.
+:::

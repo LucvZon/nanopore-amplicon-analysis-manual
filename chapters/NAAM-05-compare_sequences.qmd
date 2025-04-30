@@ -43,5 +43,9 @@ for file in {input}; do
 done > {output}
 ```
 
-- `{input}` is your mapping file.
-- `{output}` is a tab separated file .tsv with the read stats.
+- `{input}` is your fastq or bam file.
+- `{output}` is a tab separated (.tsv) file with the read stats.
+
+::: {.callout-note}
+If you are not analyzing SARS-CoV-2 data, then you can skip the next chapter and go to the final chapter to automate all of the steps we've previously discussed.
+:::

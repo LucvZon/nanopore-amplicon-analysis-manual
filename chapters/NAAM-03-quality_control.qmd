@@ -71,7 +71,7 @@ fastp -i {input} -o {output} -j /dev/null -h {report} \
 -w {threads}
 ```
 
-- `{input}` is the merged file from section 2.1.
+- `{input}` is the merged file from step 2.1.
 - `{output}` is the the quality controlled `.fastq` filename (e.g. `all_barcode01_QC.fastq`).
 - `{report}` is the QC report filename, containing various details about the quality of the data before and after processing. 
 - `{min_length}` is the expected size of your amplicons, to remove very short "rubbish" reads, generally the advise is to set it a bit lower than the expected size. Based on the QC report, which lists the number of removed reads you may adjust this setting, if too many reads are removed.
@@ -90,7 +90,7 @@ samtools view -bF 4 - | samtools sort -@ {threads} - > {output}
 ```
 
 - `{reference}` is the fasta file containing the reference that your primers should be able to map to.
-- `{input}` is the QC fastq file from section 2.2.
+- `{input}` is the QC fastq file from step 2.2.
 - `{output}` is the mapping file, it could be named something like `barcode01_QCmapped.bam`
 
 ## Trimming primers using Ampliclip
@@ -115,7 +115,7 @@ samtools sort {output.clipped}_ > {output.clipped}
 rm {output.clipped}_
 ```
 
-- `{input.mapped}` is the mapping file created in section 2.3.
+- `{input.mapped}` is the mapping file created in step 2.3.
 - `{output.clipped}` is the mapping file processed to clip the primer sequences off (e.g. `barcode01_clipped.bam`).
 - `{output.trimmed}` is the trimmed fastq file, this contains all reads mapped to the reference with primer sequences trimmed off (e.g. `barcode01_trimmed.bam`).
 - `{primers}` is the name of the primer sequence fasta file. Make sure names of the primers have either 'LEFT' or 'RIGHT' in their name to specify if it is a left or right side primer.
