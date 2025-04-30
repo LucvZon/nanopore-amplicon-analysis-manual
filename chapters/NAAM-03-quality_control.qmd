@@ -1,4 +1,4 @@
-# Quality control
+# 2. Quality control {.unnumbered}
 
 ::: callout-warning
 # Important!
@@ -42,7 +42,7 @@ To use the required tools, activate the Singularity container as follows:
 singularity shell naam_workflow.sif
 ```
 
-## Merging and decompressing FASTQ
+## 2.1 Merging and decompressing FASTQ {.unnumbered}
 
 Any file in linux can be pasted to another file using the cat command. zcat in addition also unzips gzipped files (e.g. .fastq.gz extension). If your files are already unzipped, use cat instead.
 
@@ -55,7 +55,7 @@ zcat {input.folder}/*.fastq.gz > {output}
 -   `{input.folder}` should contain all your .fastq.gz files for a single barcode.
 -   `{output}` should be the name of the combined unzipped fastq file (e.g. all_barcode01.fastq).
 
-## Running fastp quality control software
+## 2.2 Running fastp quality control software {.unnumbered}
 
 The [fastp](https://github.com/OpenGene/fastp){target="_blank"} software is a very fast multipurpose quality control software to perform quality and sequence adapter trimming for Illumina short-read and Nanopore long-read data.
 
@@ -80,7 +80,7 @@ fastp -i {input} -o {output} -j /dev/null -h {report} \
 `{threads}` is a recurring setting for the number of CPUs to use for the processing. On a laptop this will be less (e.g. 8), on an HPC you may be able to use 64 or more CPUs for processing. However, how much performance increase you get depends on the software.
 :::
 
-## Mapping reads to primer reference
+## 2.3 Mapping reads to primer reference {.unnumbered}
 
 To precisely trim the primers we map the reads to a reference sequence based on which the primers were designed. This is to make sure, when looking for the primer locations, all primer location can be found. To map the reads we use [minimap2](https://github.com/lh3/minimap2) with the `-x map-ont` option for ONT reads. `-Y` ensures reads are not hardclipped. Afterwards we use [samtools](https://www.htslib.org/) to reduce the `.bam` (mapping) file to only those reads that mapped to the reference and sort the reads in mapping file based on mapping position, which is necessary to continue working with the file.
 
@@ -93,7 +93,7 @@ samtools view -bF 4 - | samtools sort -@ {threads} - > {output}
 - `{input}` is the QC fastq file from step 2.2.
 - `{output}` is the mapping file, it could be named something like `barcode01_QCmapped.bam`
 
-## Trimming primers using Ampliclip
+## 2.4 Trimming primers using Ampliclip {.unnumbered}
 
 [Ampliclip](https://github.com/dnieuw/Ampliclip) is a tool written by [David](https://github.com/dnieuw/) to remove the primer sequences of nanopore amplicon reads. It works by mapping the primer sequences to a reference genome to find their location. Then it clips the reads mapped to the same reference (which we did in the previous step) by finding overlap between the primer location and the read ends. It allows for some "junk" in front of the primer location with `--padding` and mismatches between primer and reference `--mismatch`. After clipping it trims the reads and outputs a clipped `.bam` file and a trimmed `.fastq` file. `--minlength` can be set to remove any reads that, after trimming, have become shorter than this length. Set this to the value that was used in the QC section (e.g. 400).
 

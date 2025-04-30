@@ -1,6 +1,6 @@
-# Generating a Consensus Sequence
+# 3. Generating a Consensus Sequence {.unnumbered}
 
-## Mapping trimmed reads to reference
+## 3.1 Mapping trimmed reads to reference {.unnumbered}
 
 ::: {.callout-note}
 This is optional if the reference for the primer design and the preferred reference for consensus generation are different. Otherwise simply use the clipped mapping file from the previous step.
@@ -17,7 +17,7 @@ samtools view -bF 4 - | samtools sort -@ {threads} - > {output}
 - `{input}` is the trimmed fastq file from step 2.4.
 - `{output}` is the mapping file, it could be named something like `barcode01_mapped.bam`
 
-## Creating consensus from filtered mutations
+## 3.2 Creating consensus from filtered mutations {.unnumbered}
 
 [Virconsens](https://github.com/dnieuw/Virconsens) is a tool written by [David](https://github.com/dnieuw/) to create a consensus sequence from Nanopore amplicon reads mapped to a reference in a mapping `.bam` file. 
 

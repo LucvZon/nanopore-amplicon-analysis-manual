@@ -1,4 +1,4 @@
-# SARS-CoV-2 analysis
+# 5. SARS-CoV-2 analysis {.unnumbered}
 
 If you are dealing with SARS-Cov-2 data, then you can run the [pangolin software](https://github.com/cov-lineages/pangolin) to submit your SARS-CoV-2 genome sequences which then are compared with other genome sequences and assigned the most likely lineage.
 

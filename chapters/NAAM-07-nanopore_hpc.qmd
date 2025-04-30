@@ -1,4 +1,4 @@
-# Automating data analysis
+# 6. Automating data analysis {.unnumbered}
 
 ::: callout-important
 Everything required (software, scripts) is available in the Singularity container. Go to the preparation chapter to see how to acquire this container.
@@ -8,7 +8,7 @@ In the previous chapters, you learned how to perform each step of the amplicon d
 
 We can make use of a tool called [Snakemake](https://snakemake.readthedocs.io/en/stable/){target="_blank"} to automate the previous steps into a single pipeline. With Snakemake, you can define the steps of your analysis in a `Snakefile` and then let Snakemake handle the execution, dependency management, and error handling.
 
-## Preparing to run the workflow
+## 6.1 Preparing to run the workflow {.unnumbered}
 
 To run the automated workflow, you'll need to make sure that your project directory is set up correctly.
 
@@ -102,7 +102,7 @@ Next, use the `ls` command to list the files in the project directory and check 
 
 -   The **Snakefile** is the "recipe" for the workflow, describing all the steps we have done by hand, and it is most commonly placed in the root directory of your project (you can open the Snakefile with a text editor and have a look).
 
-## Running the workflow
+## 6.2 Running the workflow {.unnumbered}
 
 After setting everything up, we can redo the analysis for all samples in a single step. First we will test out a dry run to see if any errors appear. A dry run will not execute any of the commands but will instead display what would be done. This will help identify any errors in the Snakemake file.
 

@@ -1,4 +1,4 @@
-# Preparation
+# 1. Preparation {.unnumbered}
 
 ::: callout-warning
 # Important!
@@ -10,7 +10,7 @@ In the following sections whenever a **"parameter"** in brackets `{}` is shown, 
 Notice the small *"Copy to Clipboard"* button on the right hand side of each code chunk, this can be used to copy the code.
 :::
 
-## Singularity container
+## 1.1 Singularity container {.unnumbered}
 
 This workflow is distributed as a self-contained Singularity container image, which includes all necessary software dependencies and helper scripts. This simplifies setup considerably. It is required that [Singularity](https://docs.sylabs.io/guides/3.5/user-guide/introduction.html){target="_blank"} version 3.x or later is available on your system. If you are working with a high performance computing (HPC) system, then this will likely already be installed and available for use. Try writing `singularity --help` in your terminal (that's connected to the HPC system) and see if the command is recognized.
 
@@ -24,7 +24,7 @@ wget https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/downl
 
 Or go to the [github page](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/tag/v1.0.0){target="_blank"} and manually download it there, then transfer it to your HPC system.
 
-### Verify container
+### 1.2 Verify container {.unnumbered}
 
 You can test basic execution:
 

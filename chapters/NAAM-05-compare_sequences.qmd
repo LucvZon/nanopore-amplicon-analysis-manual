@@ -1,6 +1,6 @@
-# Comparing sequence to reference sequences
+# 4. Comparing sequence to reference sequences {.unnumbered}
 
-## Creating multiple sequence alignment
+## 4.1 Creating multiple sequence alignment {.unnumbered}
 
 We can now create a multiple sequence alignment (MSA). (Not to be confused with a read alignment .bam file).
 
@@ -27,7 +27,7 @@ gofasta sam toMultiAlign \
 
 (`tmp.sam` can be deleted)
 
-## Generate useful stats
+## 4.2 Generate useful stats {.unnumbered}
 
 You can generate read stats with `seqkit stats -T` for the raw, QC, trimmed and mapped reads.
 
