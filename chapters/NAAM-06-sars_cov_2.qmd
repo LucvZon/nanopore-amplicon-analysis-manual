@@ -1,27 +1,71 @@
-# 5. SARS-CoV-2 analysis {.unnumbered}
+# 5. Nextclade CLI {.unnumbered}
+
+You can use the command line version of Nextclade [Nextclade](https://docs.nextstrain.org/projects/nextclade/en/stable/) to identify differences between query sequences and a reference sequence and to assign query sequences to clades. 
+
+Nextclade can utilize official and community datasets which are maintained at [github.com/nextstrain/nextclade_data](github.com/nextstrain/nextclade_data). In addition, you could create your own dataset and use it with Nextclade. For more information on how to create your own dataset, visit [https://docs.nextstrain.org/projects/nextclade/en/stable/user/datasets.html](https://docs.nextstrain.org/projects/nextclade/en/stable/user/datasets.html)
+
+## 5.1 How to use nextclade {.unnumbered}
+
+Gather a list of all official and community datasets:
+```
+nextclade dataset list
+```
+
+Download an official or community dataset:
+```
+nextclade dataset get --name '{dataset}' --output-dir '{output}'
+```
+
+- `{dataset}` is the name of a dataset.
+- `{output}` is the location where the dataset will be downloaded. 
+
+Run nextclade:
+```
+nextclade run \
+--input-dataset {dataset} \
+--output-all={output}/ \
+{sequences}
+```
+
+- `{dataset}` is either an official/community or custom made dataset.
+- `{output}` is the folder where all the output files will be stored.
+- `{sequences}` is your fasta file with all of your consensus sequences. 
+
+::: callout-important
+When using Nextclade, make sure that the reference sequence of the dataset is the exact same as your reference used to generate the consensus sequence from chapter 3.
+:::
+
+## 5.2 Custom nextclade visualisation {.unnumbered}
+
+If your Nextclade dataset contained a GFF3 annotation file for the reference sequence, then you can use the [viz_nextclade_cli.R](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/tree/main/scripts) script to visualize the amino acid mutations per genetic feature.  
+
+Execute the following:
+```
+Rscript viz_nextclade_cli.R \
+--nextclade-input-dir {input_dir} \
+--json-file {input.json} \
+--plotly-output-dir {plotly_output_dir} \
+--ggplotly-output-dir {ggplotly_output_dir}
+```
+
+- `{nextclade-input-dir}` is the output folder from the nextclade run (step 5.1). 
+- `{json-file}` is the nextclade.json file that should be present in the output folder from the nextclade run (step 5.1). 
+- `{plotly-output-dir}` html plots made with plotly. 
+- `{ggplotly-output-dir}` html plots made with ggplotly. 
+
+The plots will be generated for each genetic feature of the reference sequence. Currently, we output plotly and ggplotly versions, just use whichever looks best to you. 
+
+## 5.3 Pangolin (redundant)
 
 If you are dealing with SARS-Cov-2 data, then you can run the [pangolin software](https://github.com/cov-lineages/pangolin) to submit your SARS-CoV-2 genome sequences which then are compared with other genome sequences and assigned the most likely lineage.
 
-Execute the following:
+As Nextclade already performs pangolin classification step for you, it has become redundant to run this in addition to Nextclade. However, if for whatever reason you still want to run it manually, then execute the following:
 ```bash
 pangolin {input} --outfile {output}
 ```
 
 - `{input}` is your aggregated consensus fasta file from step X.X.
 - `{output}` is a .csv file that contains taxon name and lineage assigned per fasta sequence. Read more about the output format: [https://cov-lineages.org/resources/pangolin/output.html](https://cov-lineages.org/resources/pangolin/output.html)
-
-
-## To be added...
-
-Here are some of the snakemake rules that are currently excluded:
-
-- create_depth_file
-- create_vcf
-- annotate_vcf
-- filter_vcf
-- create_filtered_vcf_tables
-
-These rules are exclusively for analysis of SARS-Cov-2 data and will be implemented into the container workflow in the near future.
 
 ::: {.callout-note}
 You can now move to the final chapter to automate all of the steps we’ve previously discussed.

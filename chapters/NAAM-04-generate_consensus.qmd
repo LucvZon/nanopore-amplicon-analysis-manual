@@ -34,7 +34,8 @@ samtools index {input}
 
 virconsens \
 -b {input} \
--o {output} \
+-o {output.fa} \
+-vf {output.vf} \
 -n {name} \
 -r {reference} \
 -d {coverage} \
@@ -43,10 +44,11 @@ virconsens \
 ```
 
 - `{input}` is the mapping bam file from step 3.1. 
-- `{output}` is the fasta file containing the consensus sequence (e.g. `barcode01_consensus.fasta`)
+- `{output.fa}` is the fasta file containing the consensus sequence (e.g. `barcode01_consensus.fasta`)
+- `{output.vf}` is an optional tsv file which contains variant information. 
 - `{name}` is the custom name of your sequence that will be used in the fasta file (e.g. `barcode01_consensus`)
 - `{reference}` is the fasta file containing the preferred reference, the same as in the previous step.
-- `{coverage}` is the minimal depth at which to not consider any alternative alleles
+- `{coverage}` is the minimal depth at which to not consider any alternative alleles.
 
 ::: {.callout-note}
 We now have a consensus sequence of our sequencing result. This is the "raw" result we can continue using for multiple sequence alignment and phylogeny in the next chapter.

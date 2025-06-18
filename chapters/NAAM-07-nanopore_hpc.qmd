@@ -22,6 +22,7 @@ singularity exec naam_workflow.sif python /amplicon_project.py --help
 
 ```default
 usage: amplicon_project.py [-h] [-p PROJECT_DIR] -n STUDY_NAME -d RAW_FASTQ_DIR -P PRIMER -r PRIMER_REFERENCE -R REFERENCE_GENOME [-m MIN_LENGTH] [-c COVERAGE] [-t THREADS] [--use_sars_cov_2_workflow]
+                           [--nextclade_dataset NEXTCLADE_DATASET]
 
 Interactive tool for setting up a Snakemake project.
 
@@ -47,9 +48,12 @@ options:
                         Maximum number of threads for the Snakefile (default: 8)
   --use_sars_cov_2_workflow
                         Add this parameter if you want to analyze SARS-CoV-2 data
+  --nextclade_dataset NEXTCLADE_DATASET
+                        Path to a custom Nextclade dataset directory, OR an official Nextclade dataset name (e.g., 'nextstrain/sars-cov-2/wuhan-hu-1/orfs'). Check official nextclade datasets with `nextclade
+                        dataset list`.
 ```
 
-Now prepare your project directory with prepare_project.py as follows:
+Now prepare your project directory with **amplicon_project.py** as follows:
 
 ``` bash
 singularity exec \
@@ -66,8 +70,11 @@ singularity exec \
     -P {primer} \
     -r {primer.reference} \
     -R {reference} \
-    -t {threads}
+    -t {threads} \
+    --nextclade_dataset {nextclade.dataset}
 ```
+
+REQUIRED ARGUMENTS:
 
 - `{project.folder}` is your project folder. This is where you run your workflow and store results.
 - `{name}` is the name of your study, no spaces allowed.
@@ -78,7 +85,13 @@ singularity exec \
 - `{primer.reference}` is the reference sequence .fasta file used for primer trimming.
 - `{reference}` is the reference sequence .fasta file used for the consensus generation.
 
-Please use absolute paths for the reads, primers and references so that they can always be located.
+OPTIONAL ARGUMENTS:
+
+- `{nextclade.dataset}` the path to an official or custom nextclade dataset. A list official nextclade datasets can be checked with the following command: `singularity exec naam_workflow.sif nextclade dataset list`. If you are using a self made custom nextclade dataset, then please provide the absolute path to the dataset.
+
+::: callout-important
+Please use absolute paths for the **reads**, **primers** and **references** so that they can always be located.
+:::
 
 The `--bind` arguments are needed to explicitly tell Singularity to mount the necessary host directories into the container. The part before the colon is the path on the host machine that you want to make available. The path after the colon is the path inside the container where the host directory should be mounted. 
 
@@ -88,7 +101,7 @@ Once the setup is completed, move to your newly created project directory with `
 
 Next, use the `ls` command to list the files in the project directory and check if the following files are present: `sample.tsv`, `config.yaml` and `Snakefile`.
 
--   The **sample.tsv** should have 8 columns:
+-   The **sample.tsv** should have 9 columns:
     - `unique_id`: the unique sample name that's generated based on the barcode directories.
     - `sequence_name`: the name given to the consensus sequence at the end of the pipeline. It's generated with the following template: {study_name}_{unique_id}.
     - `fastq_path`: the location of the raw .fastq.gz files per sample.
@@ -97,6 +110,7 @@ Next, use the `ls` command to list the files in the project directory and check 
     - `primer_reference`: the location of the reference sequence for primer trimming.
     - `coverage`: minimum coverage required.
     - `min_length`: minimum length required.
+    - `nextclade_db`: path to the nextclade dataset. This column can be empty if you're not including Nextclade.
 
 -   The **config.yaml** determines if the SARS_CoV_2 section of the workflow is enabled and the amount of default threads to use.
 
