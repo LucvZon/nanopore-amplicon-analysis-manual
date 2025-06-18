@@ -8,6 +8,7 @@ Interesting files can be found here:
 
 -   **workflow/snakefile_naam.smk**: This is the heart of the workflow.
 -   **scripts/amplicon_project.py**: Script to setup your project directory.
+-   **scripts/viz_nextclade_cli.R**: Script to visualize Nextclade mutations.
 -   **envs/environment.yml**: The conda environment used for the workflow.
 -   **envs/imam_workflow.def**: The definition file used for container creation.
 
@@ -87,5 +88,4 @@ cd ..
   -   Create multiple sequence alignment between consensus sequences and a reference with minimap2 and [gofasta](https://github.com/virus-evolution/gofasta)
   -   Create some read statistics for raw, QC, trimmed and mapped reads. 
 
-4.  Optional: SARS-CoV-2 analysis
-  -   Runs [pangolin](https://github.com/cov-lineages/pangolin) if you are analysing SARS-CoV-2 data. 
+4.  Optional: [Nextclade CLI](https://docs.nextstrain.org/projects/nextclade/en/stable/user/nextclade-cli/index.html) & [Pangolin](https://github.com/cov-lineages/pangolin) analysis.
