@@ -1,6 +1,7 @@
 channels:
 - conda-forge
 - bioconda
+- r
 - defaults
 dependencies:
 - bioconda::samtools=1.21
@@ -16,4 +17,13 @@ dependencies:
 # Downgraded Snakemake version to ensure compatibility with pangolin
 - bioconda::snakemake=7.32.4
 - bioconda::pangolin=4.3.1
+- mamba install bioconda::nextclade=3.13.3
+- r::r-plotly 
+- r::r-dplyr
+- r::r-tidyr
+- r::r-stringr
+- r::r-ggplot2
+- r::r-scales
+- r::r-seqinr
+- conda-forge::r-argparse
 name: naam
