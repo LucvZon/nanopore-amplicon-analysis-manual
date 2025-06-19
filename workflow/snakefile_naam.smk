@@ -8,6 +8,7 @@ import sys, string, shutil, glob
 from pandas import read_table
 from collections import defaultdict
 import pandas as pd
+import os
 
 configfile: "config.yaml"
 
@@ -16,6 +17,7 @@ sample_data = pd.read_csv("sample.tsv", sep="\t")
 SAMPLES = sample_data["unique_id"].tolist()
 
 ALIGNMENT_REFERENCE = sample_data.iloc[0]["reference"]
+NEXTCLADE_DB = sample_data.iloc[0]["nextclade_db"]
 
 sample_data = sample_data.set_index('unique_id')
 sample_data = sample_data.to_dict("index")
@@ -24,15 +26,19 @@ sample_data = sample_data.to_dict("index")
 def get_final_outputs(wildcards):
     outputs = []
     # Standard outputs - just append the file path strings
-    outputs.append("result/alignment/all_consensus_aligned.fasta") # Removed keyword= and comma
+    outputs.append("result/alignment/all_consensus_aligned.fasta")
     outputs.append("result/readstats/raw.tsv")
     outputs.append("result/readstats/QC.tsv")
     outputs.append("result/readstats/trimmed.tsv")
     outputs.append("result/readstats/mapped.tsv")
+    outputs.append("result/variants/all_variants.tsv")
 
-    if config.get("use_sars_cov_2_workflow", False):
+    if config.get("run_nextclade", False):
         # Use consistent path 'result/' and correct append syntax
         outputs.append("result/pangolin.csv")
+        outputs.append("result/nextclade/nextclade.json")
+        outputs.append("result/nextclade/success.txt")
+        outputs.append("official_datasets.txt")
 
     # Ensure return is correctly indented at the function level
     return outputs
@@ -132,9 +138,10 @@ rule map_to_reference:
 ### CONSENSUS CALLING ###
 rule create_consensus:
     input:
-        input="result/mapped/{sample_id}_mapped.bam"
+        "result/mapped/{sample_id}_mapped.bam"
     output:
-        "result/consensus/{sample_id}_consensus.fasta"
+        fa="result/consensus/{sample_id}_consensus.fasta",
+        vf_raw=temp("result/variants/{sample_id}_variants_raw.tsv")
     threads: 8
     params:
         reference=lambda wildcards: sample_data[wildcards.sample_id]["reference"],
@@ -146,12 +153,51 @@ rule create_consensus:
 
         virconsens \
         -b {input} \
-        -o {output} \
+        -o {output.fa} \
+        -vf {output.vf_raw} \
         -n {params.sequence_name} \
         -r {params.reference} \
         -d {params.coverage} \
         -af 0.1 \
         -c {threads}
+        """
+
+rule add_samplename_to_variants:
+    input:
+        vf_raw="result/variants/{sample_id}_variants_raw.tsv"
+    output:
+        vf="result/variants/{sample_id}_variants.tsv"
+    params:
+        sequence_name=lambda wildcards: sample_data[wildcards.sample_id]["sequence_name"]
+    shell:
+        """
+        awk -v sample_name="{params.sequence_name}" \
+            'BEGIN {{ OFS="\\t" }} \
+            NR==1 {{ print "sample_name", $0; next }} \
+            $3 != $4 {{ print sample_name, $0 }}' \
+            {input.vf_raw} > {output.vf}
+        """
+
+rule aggregate_variants:
+    input:
+        expand("result/variants/{sample_id}_variants.tsv", sample_id=SAMPLES)
+    output:
+        all_vf="result/variants/all_variants.tsv"
+    threads: 1
+    shell:
+        """
+        # Check if there are any input files to prevent errors with head/tail on empty list
+        if [ -n "{input}" ]; then
+            # Print header from the first file
+            head -n 1 $(echo {input} | cut -d' ' -f1) > {output.all_vf}
+            # Append content (without header) from all files
+            for f in {input}; do
+                tail -n +2 "$f" >> {output.all_vf}
+            done
+        else
+            # Create an empty file or a file with just a header if no inputs
+            echo "seqName\tref_pos\tnum_aln\tREF\tALT\tALT_count\tALT_AF" > {output.all_vf}
+        fi
         """
 
 rule aggregate_consensus:
@@ -165,7 +211,7 @@ rule aggregate_consensus:
         cat {input} > {output}
         """
 
-if config.get("use_sars_cov_2_workflow", False):
+if config.get("run_nextclade", False):
     rule run_pangolin:
         input:
             "result/alignment/all_consensus.fasta"
@@ -176,7 +222,69 @@ if config.get("use_sars_cov_2_workflow", False):
             """
             pangolin {input} --outfile {output}
             """
-		
+
+    rule check_dataset:
+        output:
+            "official_datasets.txt"
+        params:
+            database=NEXTCLADE_DB
+        shell:
+            """
+            set -euo pipefail
+
+            # Fetch the list of official datasets
+            nextclade dataset list --only-names > official_datasets.txt
+
+            # Strip quotes (if any) from the dataset name
+            CLEANED_DB=$(echo {params.database} | tr -d "'")
+
+            # Try to find it in the official dataset list
+            if grep -q "^$CLEANED_DB$" official_datasets.txt; then
+                echo "Official dataset found: $CLEANED_DB"
+                nextclade dataset get --name "$CLEANED_DB" --output-dir "$CLEANED_DB"
+            else
+                echo "Custom dataset detected: $CLEANED_DB Â— skipping download"
+            fi
+            """
+
+    rule run_nextclade:
+        input:
+            "result/alignment/all_consensus.fasta"
+        params:
+            database=NEXTCLADE_DB,
+            output_dir="result/nextclade/",
+            gff3="genome_annotation.gff3"
+        output:
+            "result/nextclade/nextclade.json"
+        shell:
+           """
+           nextclade read-annotation {params.database}/{params.gff3} --output {params.output_dir}/genome_annotation.json 
+                     
+           nextclade run \
+           --input-dataset {params.database} \
+           --output-all={params.output_dir} \
+           {input}
+           """
+
+    rule visualize_mutation_table:
+        input:
+            nextclade_json="result/nextclade/nextclade.json"
+        output:
+            success="result/nextclade/success.txt"
+        params:
+            nextclade_input_dir="result/nextclade",
+            plotly_output_dir="result/nextclade/plotly",
+            ggplotly_output_dir="result/nextclade/ggplotly"
+        shell:
+            """
+            Rscript ~/scripts/r/viz_nextclade_cli.R \
+            --nextclade-input-dir {params.nextclade_input_dir} \
+            --json-file {input.nextclade_json} \
+            --plotly-output-dir {params.plotly_output_dir} \
+            --ggplotly-output-dir {params.ggplotly_output_dir}
+            """
+
+
 rule align_consensus:
     input:
         "result/alignment/all_consensus.fasta"
