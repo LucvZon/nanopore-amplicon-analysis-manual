@@ -126,13 +126,16 @@ rule map_to_reference:
     input:
         fastq="result/trimmed/{sample_id}_trimmed.fastq"
     output:
-        "result/mapped/{sample_id}_mapped.bam"
+        bam="result/mapped/{sample_id}_mapped.bam",
+        filtered="result/filtered/{sample_id}_filtered.fastq"
     threads: 8
     params:
         reference=lambda wildcards: sample_data[wildcards.sample_id]["reference"]
     shell:
         """
-        minimap2 -Y -t {threads} -x map-ont -a {params.reference} {input.fastq} 2> /dev/null | samtools view -bF 4 - | samtools sort -@ {threads} - > {output}
+        minimap2 -Y -t {threads} -x map-ont -a {params.reference} {input.fastq} 2> /dev/null | samtools view -bF 4 - | samtools sort -@ {threads} - > {output.bam}
+        samtools index -@ {threads} {output.bam}
+        samtools fastq {output.bam} 2> /dev/null > {output.filtered}
         """
 
 ### CONSENSUS CALLING ###
