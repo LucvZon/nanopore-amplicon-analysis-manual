@@ -19,6 +19,7 @@ parser.add_argument("-m", "--min_length", required=False, help="Minimum read len
 parser.add_argument("-c", "--coverage", required=False, help="Minimum coverage required for consensus (default: 30)", default=30, type=int)
 parser.add_argument("-t", "--threads", required=False, help="Maximum number of threads for the Snakefile (default: 8)", default=8, type=int)
 parser.add_argument("--use_sars_cov_2_workflow", action='store_true', help="Add this parameter if you want to analyze SARS-CoV-2 data")
+parser.add_argument("--nextclade_dataset", required=False, help="Path to a custom Nextclade dataset directory, OR an official Nextclade dataset name (e.g., 'nextstrain/sars-cov-2/wuhan-hu-1/orfs'). Check official nextclade datasets with `nextclade dataset list`.")
 
 args = parser.parse_args() # reads command from user
 
@@ -40,7 +41,7 @@ else:
 print(f"Using project directory: {project_dir}")
 
 ### Copy Snakemake file and update STUDY_NAME
-src_snakemake = "/home/r050834/scripts/workflows/snakefile_naam.smk" # Temporary hard coded path
+src_snakemake = "/snakefile_naam.smk" # This path is set for the singularity image
 if not os.path.exists(src_snakemake):
     print(f"Error: Source Snakemake file '{src_snakemake}' not found.")
     # Potentially exit here, or provide a way to specify it
@@ -69,7 +70,7 @@ except Exception as e:
     print(f"Error processing Snakemake file: {e}")
     sys.exit(1)
 
-### Maybe introduce checks here?
+### Path validations
 # Ensure optional paths are stored as absolute paths
 ref_genome_path = os.path.abspath(args.reference_genome)
 primer_path = os.path.abspath(args.primer)
@@ -80,6 +81,13 @@ for path, name in [(ref_genome_path, "Reference genome"), (primer_path, "Primer 
     if path and not os.path.isfile(path):
          print(f"Error: Specified {name} file '{path}' does not exist or is not a file.")
          sys.exit(1)
+
+# Handle nextclade dataset
+nextclade_dataset_identifier = args.nextclade_dataset
+if nextclade_dataset_identifier:
+    print(f"Nextclade dataset identifier provided: {nextclade_dataset_identifier}")
+    print("  Note: If this is a path to a custom dataset, ensure it's an absolute pathry.")
+    print("  If it's an official dataset name, the workflow will attempt to download it.")
 
 
 ### Set up raw FASTQ files
@@ -118,9 +126,17 @@ for item_path in potential_barcode_paths:
                 fastq_path = item_path # glob with absolute base returns absolute paths
                 # Format sequence name {study_name}_{unique_id}  
                 sequence_name = f"{args.study_name}_{unique_id}"
-                sample_data.append({"unique_id": unique_id, "sequence_name": sequence_name,"fastq_path": fastq_path, "reference": ref_genome_path, "primers": primer_path,
-                                    "primer_reference": primer_ref_path, "coverage": args.coverage, "min_length": args.min_length})
-                # print(f"Found: {unique_id} -> {fastq_path}") # Optional: for debugging
+                sample_data.append({
+                    "unique_id": unique_id,
+                    "sequence_name": sequence_name,
+                    "fastq_path": fastq_path,
+                    "reference": ref_genome_path,
+                    "primers": primer_path,
+                    "primer_reference": primer_ref_path,
+                    "coverage": args.coverage,
+                    "min_length": args.min_length,
+                    "nextclade_db": nextclade_dataset_identifier
+                })
             else:
                  print(f"Warning: Directory '{dir_name}' in '{raw_fastq_dir_abs}' starts with 'barcode' but is not followed by only digits. Skipping.")
         # No else needed as glob already filtered for 'barcode*'
@@ -158,10 +174,17 @@ min_length = args.min_length
 coverage = args.coverage
 threads = args.threads
 
+### Need to expand this with "use_nextclade"
 config_data = {
     "threads": threads,
 	"use_sars_cov_2_workflow": args.use_sars_cov_2_workflow # Either 'True' or 'False'. 
 }
+
+# Add nextclade to config.yaml
+if nextclade_dataset_identifier:  # If --nextclade_dataset argument was provided
+    config_data["run_nextclade"] = True
+else: # If --nextclade_dataset argument was NOT provided
+    config_data["run_nextclade"] = False
 
 # Define config file path within project directory
 yaml_file = os.path.join(project_dir, "config.yaml")
