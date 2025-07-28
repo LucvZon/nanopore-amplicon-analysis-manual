@@ -6,6 +6,8 @@ From: continuumio/miniconda3
     ../envs/naam.tar.gz /naam.tar.gz
     ../python/amplicon_project.py /amplicon_project.py
     ../workflows/snakefile_naam.smk /snakefile_naam.smk
+    ../r/viz_nextclade_cli.R /viz_nextclade_cli.R
+    NAAM_VERSION /NAAM_VERSION
 
 
 %post
@@ -39,7 +41,7 @@ From: continuumio/miniconda3
 # Added by Singularity build for automatic Conda environment activation
 if [ -f "/opt/conda/etc/profile.d/conda.sh" ]; then
     . "/opt/conda/etc/profile.d/conda.sh"
-    conda activate myenv
+    conda activate naam
 else
     echo "WARNING: Conda setup script not found (/opt/conda/etc/profile.d/conda.sh)" >> /dev/stderr
 fi
@@ -65,3 +67,34 @@ EOF
     # Optional: Handle LD_LIBRARY_PATH if needed
     # ENV_LIB_DIR="/opt/conda/envs/naam/lib"
     # export LD_LIBRARY_PATH="${ENV_LIB_DIR}:${LD_LIBRARY_PATH}"
+
+
+# --- A dedicated runscript for version and help information ---
+%runscript
+    #!/bin/bash
+    # This runscript is for informational purposes only.
+    # The main tools are intended to be run via 'singularity exec'.
+
+    # Check if the first argument is '--version'
+    if [ "$1" = "--version" ]; then
+        # If it is, print the version and exit.
+        cat /NAAM_VERSION
+        exit 0
+    fi
+
+    # If no valid flag is given, print a helpful usage message.
+    # The $SINGULARITY_CONTAINER variable is automatically set by Singularity.
+    echo "NAAM Workflow Container - Version: $(cat /NAAM_VERSION)"
+    echo "----------------------------------------------------"
+    echo "This container provides a two-step amplicon analysis workflow."
+    echo
+    echo "Usage:"
+    echo "  singularity run $(basename $SINGULARITY_CONTAINER) --version    # To see this container's version"
+    echo
+    echo "Workflow Steps:"
+    echo "  1. Prepare project directory:"
+    echo "     singularity exec $(basename $SINGULARITY_CONTAINER) python /amplicon_project.py -p <project_dir> ..."
+    echo
+    echo "  2. Run the Snakemake workflow:"
+    echo "     singularity exec $(basename $SINGULARITY_CONTAINER) snakemake --snakefile <project_dir>/Snakefile --cores <N>"
+    echo
