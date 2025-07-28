@@ -29,7 +29,7 @@ Or go to the [github page](https://github.com/LucvZon/nanopore-amplicon-analysis
 You can test basic execution:
 
 ``` bash
-singularity --version
+singularity run naam_workflow.sif --version
 singularity exec naam_workflow.sif echo "Container is accessible!"
 ```
 
