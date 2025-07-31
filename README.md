@@ -54,9 +54,7 @@ singularity exec \
 Here are all the steps outlined:
 ```         
 # Create the environment
-conda config --set channel_priority flexible
 conda env create -f environment.yml
-conda config --set channel_priority strict
 
 # Installation of Virconsens and Ampliclip need to be performed with the 'naam' conda environment activated
 conda activate naam
