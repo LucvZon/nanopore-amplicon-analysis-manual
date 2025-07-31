@@ -17,7 +17,7 @@ dependencies:
 # Downgraded Snakemake version to ensure compatibility with pangolin
 - bioconda::snakemake=7.32.4
 - bioconda::pangolin=4.3.1
-- mamba install bioconda::nextclade=3.13.3
+- bioconda::nextclade=3.13.3
 - r::r-plotly 
 - r::r-dplyr
 - r::r-tidyr
