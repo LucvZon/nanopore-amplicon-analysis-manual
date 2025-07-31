@@ -1,29 +1,33 @@
 channels:
-- conda-forge
-- bioconda
-- r
-- defaults
+  - conda-forge
+  - bioconda
 dependencies:
-- bioconda::samtools=1.21
-- conda-forge::pandas=2.2.3
-- bioconda::vcftools=0.1.16
-- bioconda::minimap2=2.28
-- bioconda::gofasta=1.2.3
-- bioconda::fastp=0.24.1
-- bioconda::seqkit=2.10.0
-- conda-forge::python=3.10
-- conda-forge::biopython=1.85
-- bioconda::pysam=0.22.0
-# Downgraded Snakemake version to ensure compatibility with pangolin
-- bioconda::snakemake=7.32.4
-- bioconda::pangolin=4.3.1
-- bioconda::nextclade=3.13.3
-- r::r-plotly 
-- r::r-dplyr
-- r::r-tidyr
-- r::r-stringr
-- r::r-ggplot2
-- r::r-scales
-- r::r-seqinr
-- conda-forge::r-argparse
+  # Core
+  - conda-forge::python=3.10
+
+  # Critical pin, downgrade Snakemake version to ensure compatibility with pangolin
+  - bioconda::snakemake=7.32.4
+  - bioconda::pangolin
+
+  # Other tools
+  - bioconda::samtools
+  - conda-forge::pandas
+  - bioconda::vcftools
+  - bioconda::minimap2
+  - bioconda::gofasta
+  - bioconda::fastp
+  - bioconda::seqkit
+  - conda-forge::biopython
+  - bioconda::pysam
+  - bioconda::nextclade
+
+  # R packages
+  - conda-forge::r-plotly 
+  - conda-forge::r-dplyr
+  - conda-forge::r-tidyr
+  - conda-forge::r-stringr
+  - conda-forge::r-ggplot2
+  - conda-forge::r-scales
+  - conda-forge::r-seqinr
+  - conda-forge::r-argparse
 name: naam
