@@ -57,7 +57,7 @@ Now prepare your project directory with **amplicon_project.py** as follows:
 
 ``` bash
 singularity exec \
-  --bind /mnt/viro0002:/mnt/viro0002 \
+  --bind /mnt/viro0002-data:/mnt/viro0002-data \
   --bind $HOME:$HOME \
   --bind $PWD:$PWD \
   naam_workflow.sif \
@@ -95,7 +95,7 @@ Please use absolute paths for the **reads**, **primers** and **references** so t
 
 The `--bind` arguments are needed to explicitly tell Singularity to mount the necessary host directories into the container. The part before the colon is the path on the host machine that you want to make available. The path after the colon is the path inside the container where the host directory should be mounted. 
 
-As a default, Singularity often automatically binds your home directory (`$HOME`) and the current directory (`$PWD`). We also explicitly bind `/mnt/viro0002` in this example. If your input files (reads, reference, databases) or output project directory reside outside these locations, you MUST add specific `--bind /host/path:/container/path` options for those locations, otherwise the container won't be able to find them.
+As a default, Singularity often automatically binds your home directory (`$HOME`) and the current directory (`$PWD`). We also explicitly bind `/mnt/viro0002-data` in this example. If your input files (reads, reference, databases) or output project directory reside outside these locations, you MUST add specific `--bind /host/path:/container/path` options for those locations, otherwise the container won't be able to find them.
 
 Once the setup is completed, move to your newly created project directory with `cd`, check where you are with `pwd`.
 
@@ -124,7 +124,7 @@ Run inside of your project directory:
 
 ```bash
 singularity exec \
-  --bind /mnt/viro0002:/mnt/viro0002 \
+  --bind /mnt/viro0002-data:/mnt/viro0002-data \
   --bind $HOME:$HOME \
   --bind $PWD:$PWD \
   naam_workflow.sif \
