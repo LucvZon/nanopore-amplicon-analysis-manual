@@ -280,7 +280,7 @@ if config.get("run_nextclade", False):
             ggplotly_output_dir="result/nextclade/ggplotly"
         shell:
             """
-            Rscript ~/scripts/r/viz_nextclade_cli.R \
+            Rscript /viz_nextclade_cli.R \
             --nextclade-input-dir {params.nextclade_input_dir} \
             --json-file {input.nextclade_json} \
             --plotly-output-dir {params.plotly_output_dir} \
