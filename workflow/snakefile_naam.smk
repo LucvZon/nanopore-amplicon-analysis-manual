@@ -311,6 +311,7 @@ rule run_nextclade:
        {input.consensus}
        """
 
+<<<<<<< HEAD
 rule visualize_mutation_table:
     input:
         nextclade_json="result/{virus}/nextclade/nextclade.json"
@@ -330,6 +331,56 @@ rule visualize_mutation_table:
         --plotly-output-dir {params.plotly_output_dir} \
         --ggplotly-output-dir {params.ggplotly_output_dir} > {log} 2>&1
         """
+=======
+            # Strip quotes (if any) from the dataset name
+            CLEANED_DB=$(echo {params.database} | tr -d "'")
+
+            # Try to find it in the official dataset list
+            if grep -q "^$CLEANED_DB$" official_datasets.txt; then
+                echo "Official dataset found: $CLEANED_DB"
+                nextclade dataset get --name "$CLEANED_DB" --output-dir "$CLEANED_DB"
+            else
+                echo "Custom dataset detected: $CLEANED_DB Â— skipping download"
+            fi
+            """
+
+    rule run_nextclade:
+        input:
+            "result/alignment/all_consensus.fasta"
+        params:
+            database=NEXTCLADE_DB,
+            output_dir="result/nextclade/",
+            gff3="genome_annotation.gff3"
+        output:
+            "result/nextclade/nextclade.json"
+        shell:
+           """
+           nextclade read-annotation {params.database}/{params.gff3} --output {params.output_dir}/genome_annotation.json 
+                     
+           nextclade run \
+           --input-dataset {params.database} \
+           --output-all={params.output_dir} \
+           {input}
+           """
+
+    rule visualize_mutation_table:
+        input:
+            nextclade_json="result/nextclade/nextclade.json"
+        output:
+            success="result/nextclade/success.txt"
+        params:
+            nextclade_input_dir="result/nextclade",
+            plotly_output_dir="result/nextclade/plotly",
+            ggplotly_output_dir="result/nextclade/ggplotly"
+        shell:
+            """
+            Rscript /viz_nextclade_cli.R \
+            --nextclade-input-dir {params.nextclade_input_dir} \
+            --json-file {input.nextclade_json} \
+            --plotly-output-dir {params.plotly_output_dir} \
+            --ggplotly-output-dir {params.ggplotly_output_dir}
+            """
+>>>>>>> 8783c5024572bc19efd5e45d2559f86e864cc9fa
 
 
 rule align_consensus:
