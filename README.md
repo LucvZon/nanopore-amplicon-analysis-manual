@@ -22,7 +22,7 @@ wget https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/downl
 2.  **Prepare project directory**
 ```         
 singularity exec \
-  --bind /mnt/viro0002:/mnt/viro0002 \
+  --bind /mnt/viro0002-data:/mnt/viro0002-data \ # Use whatever --bind is required for your context
   --bind $HOME:$HOME \
   --bind $PWD:$PWD \
   naam_workflow.sif \
@@ -30,18 +30,16 @@ singularity exec \
     -p {project.folder} \
     -n {name} \
     -d {reads} \
-    -m {min_length} \
-    -c {coverage} \
-    -P {primer} \
-    -r {primer.reference} \
-    -R {reference} \
-    -t {threads}
+    --virus-config {virus_config.yaml} \
+    --sample-map {sample_map.csv}
 ```
+
+Example of virus_config.yaml and sample_map.csv is available in config/.
 
 3.  **Run Snakemake workflow**
 ```         
 singularity exec \
-  --bind /mnt/viro0002:/mnt/viro0002 \
+  --bind /mnt/viro0002-data:/mnt/viro0002-data \
   --bind $HOME:$HOME \
   --bind $PWD:$PWD \
   naam_workflow.sif \
@@ -86,4 +84,4 @@ cd ..
   -   Create multiple sequence alignment between consensus sequences and a reference with minimap2 and [gofasta](https://github.com/virus-evolution/gofasta)
   -   Create some read statistics for raw, QC, trimmed and mapped reads. 
 
-4.  Optional: [Nextclade CLI](https://docs.nextstrain.org/projects/nextclade/en/stable/user/nextclade-cli/index.html) & [Pangolin](https://github.com/cov-lineages/pangolin) analysis.
+4.  Optional: [Nextclade CLI](https://docs.nextstrain.org/projects/nextclade/en/stable/user/nextclade-cli/index.html).
