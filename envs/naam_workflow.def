@@ -7,6 +7,7 @@ From: continuumio/miniconda3
     ../python/amplicon_project.py /amplicon_project.py
     ../workflows/snakefile_naam.smk /snakefile_naam.smk
     ../r/viz_nextclade_cli.R /viz_nextclade_cli.R
+    ../configs/virus_config.yaml /virus_config.yaml
     NAAM_VERSION /NAAM_VERSION
 
 

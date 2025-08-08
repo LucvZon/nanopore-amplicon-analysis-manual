@@ -93,18 +93,17 @@ def check_for_updates(repo_owner: str, repo_name: str):
             print(f"\n\n{Colors.RED}Aborting script.{Colors.ENDC}", file=sys.stderr)
             sys.exit(1)
 
-parser = argparse.ArgumentParser(description="Interactive tool for setting up a Snakemake project.")
+
+# Argument parsing
+parser = argparse.ArgumentParser(
+    description="Interactive tool for setting up a multi-virus amplicon analysis project.",
+    formatter_class=argparse.RawTextHelpFormatter
+)
 parser.add_argument("-p", "--project_dir", help="Project directory path (default: current directory)", default=".") # current directory
 parser.add_argument("-n", "--study_name", required=True, help="Name of the study")
-parser.add_argument("-d", "--raw_fastq_dir", required=True, help="Directory containing raw FASTQ files")
-parser.add_argument("-P", "--primer", required=True, help="Fasta file containing primer sequences")
-parser.add_argument("-r", "--primer_reference", required=True, help="Fasta file containing primer reference sequence")
-parser.add_argument("-R", "--reference_genome", required=True, help="Fasta file containing reference genome")
-parser.add_argument("-m", "--min_length", required=False, help="Minimum read length (default: 1000)", default=1000, type=int)
-parser.add_argument("-c", "--coverage", required=False, help="Minimum coverage required for consensus (default: 30)", default=30, type=int)
-parser.add_argument("-t", "--threads", required=False, help="Maximum number of threads for the Snakefile (default: 8)", default=8, type=int)
-parser.add_argument("--use_sars_cov_2_workflow", action='store_true', help="Add this parameter if you want to analyze SARS-CoV-2 data")
-parser.add_argument("--nextclade_dataset", required=False, help="Path to a custom Nextclade dataset directory, OR an official Nextclade dataset name (e.g., 'nextstrain/sars-cov-2/wuhan-hu-1/orfs'). Check official nextclade datasets with `nextclade dataset list`.")
+parser.add_argument("-d", "--raw_fastq_dir", required=True, help="Directory containing raw FASTQ barcode subdirectories")
+parser.add_argument("--virus-config", required=True, help="Path to the virus configuration YAML file.")
+parser.add_argument("--sample-map", required=True, help="Path to the sample map CSV file.\n(CSV must have 'barcode_dir' and 'virus_id' columns)")
 
 args = parser.parse_args() # reads command from user
 
@@ -157,139 +156,118 @@ except Exception as e:
     print(f"Error processing Snakemake file: {e}")
     sys.exit(1)
 
-### Path validations
-# Ensure optional paths are stored as absolute paths
-ref_genome_path = os.path.abspath(args.reference_genome)
-primer_path = os.path.abspath(args.primer)
-primer_ref_path = os.path.abspath(args.primer_reference)
 
-# Check existence of optional files if paths were provided
-for path, name in [(ref_genome_path, "Reference genome"), (primer_path, "Primer FASTA"), (primer_ref_path, "Primer reference FASTA")]:
-    if path and not os.path.isfile(path):
-         print(f"Error: Specified {name} file '{path}' does not exist or is not a file.")
-         sys.exit(1)
-
-# Handle nextclade dataset
-nextclade_dataset_identifier = args.nextclade_dataset
-if nextclade_dataset_identifier:
-    print(f"Nextclade dataset identifier provided: {nextclade_dataset_identifier}")
-    print("  Note: If this is a path to a custom dataset, ensure it's an absolute path.")
-    print("  If it's an official dataset name, the workflow will attempt to download it.")
-
-
-### Set up raw FASTQ files
-raw_fastq_dir_arg = args.raw_fastq_dir
-# Check existence
-if not os.path.exists(raw_fastq_dir_arg):
-    print(f"Error: Raw FASTQ directory '{raw_fastq_dir_arg}' does not exist.")
+# --- Load Virus Config YAML ---
+try:
+    with open(args.virus_config, 'r') as f:
+        virus_config = yaml.safe_load(f)
+    if not isinstance(virus_config, dict):
+        raise TypeError("YAML content is not a dictionary.")
+    print(f"Successfully loaded virus config from: {args.virus_config}")
+except Exception as e:
+    print(f"Error: Failed to load or parse virus config file '{args.virus_config}': {e}", file=sys.stderr)
     sys.exit(1)
-# Check if it's a directory
-if not os.path.isdir(raw_fastq_dir_arg):
-     print(f"Error: Provided raw FASTQ path '{raw_fastq_dir_arg}' is not a directory.")
-     sys.exit(1)
 
-# Ensure raw_fastq_dir itself is absolute for robust path joining and globbing
-raw_fastq_dir_abs = os.path.abspath(raw_fastq_dir_arg)
+# --- Load Sample Map CSV ---
+try:
+    sample_map_df = pd.read_csv(args.sample_map)
+    if not all(col in sample_map_df.columns for col in ['barcode_dir', 'virus_id']):
+        raise ValueError("Sample map must contain 'barcode_dir' and 'virus_id' columns.")
+    # Use the barcode directory name as the index for easy lookups
+    sample_map_df.set_index('barcode_dir', inplace=True)
+    print(f"Successfully loaded sample map from: {args.sample_map}")
+except Exception as e:
+    print(f"Error: Failed to load or parse sample map file '{args.sample_map}': {e}", file=sys.stderr)
+    sys.exit(1)
 
-print(f"Scanning for barcode directories in: {raw_fastq_dir_abs}")
 
+print("\nScanning for barcode directories and generating sample sheet...")
 sample_data = []
-# Use glob to find items starting with 'barcode' inside the raw fastq directory
+raw_fastq_dir_abs = os.path.abspath(args.raw_fastq_dir)
+
+
+# Find all potential barcode directories
 search_pattern = os.path.join(raw_fastq_dir_abs, 'barcode*')
 potential_barcode_paths = glob.glob(search_pattern)
 
 for item_path in potential_barcode_paths:
-    # Check if the found item is actually a directory
     if os.path.isdir(item_path):
-        dir_name = os.path.basename(item_path) # e.g., "barcode49"
-        # Extract the number part after "barcode"
-        if dir_name.startswith("barcode"):
-            number_part = dir_name[len("barcode"):] # Get the part after "barcode"
-            if number_part.isdigit(): # Check if it's purely numeric
-                barcode_num = int(number_part)
-                # Format the unique_id with leading zero if needed (e.g., BC01, BC49)
-                unique_id = f"BC{barcode_num:02d}"
-                # The fastq_path should be the absolute path to the barcode directory
-                fastq_path = item_path # glob with absolute base returns absolute paths
-                # Format sequence name {study_name}_{unique_id}  
-                sequence_name = f"{args.study_name}_{unique_id}"
-                sample_data.append({
-                    "unique_id": unique_id,
-                    "sequence_name": sequence_name,
-                    "fastq_path": fastq_path,
-                    "reference": ref_genome_path,
-                    "primers": primer_path,
-                    "primer_reference": primer_ref_path,
-                    "coverage": args.coverage,
-                    "min_length": args.min_length,
-                    "nextclade_db": nextclade_dataset_identifier
-                })
-            else:
-                 print(f"Warning: Directory '{dir_name}' in '{raw_fastq_dir_abs}' starts with 'barcode' but is not followed by only digits. Skipping.")
-        # No else needed as glob already filtered for 'barcode*'
+        barcode_dir_name = os.path.basename(item_path)
 
-# Check if any valid barcode directories were found
+        # 1. Look up the virus_id from the sample map
+        if barcode_dir_name not in sample_map_df.index:
+            print(f"  - Warning: Directory '{barcode_dir_name}' found on disk but not in sample map. Skipping.")
+            continue
+        virus_id = sample_map_df.loc[barcode_dir_name, 'virus_id']
+
+        # 2. Get the parameters for this virus from the virus config
+        if virus_id not in virus_config:
+            print(f"  - Warning: virus_id '{virus_id}' (from sample map for '{barcode_dir_name}') not found in virus config. Skipping.")
+            continue
+        params = virus_config[virus_id]
+
+        # 3. Create the unique ID and sequence name
+        number_part = barcode_dir_name[len("barcode"):]
+        if not number_part.isdigit():
+            print(f"  - Warning: Directory name '{barcode_dir_name}' is not in 'barcode<number>' format. Skipping.")
+            continue
+        
+        unique_id = f"BC{int(number_part):02d}"
+        sequence_name = f"{args.study_name}_{unique_id}"
+
+        # 4. Build the data dictionary for this sample, making paths absolute
+        try:
+            sample_row = {
+                "unique_id": unique_id,
+                "sequence_name": sequence_name,
+                "fastq_path": item_path,
+                "virus_id": virus_id,
+                # Use .get() for safety and make all paths absolute for robustness
+                "reference_genome": os.path.abspath(params.get('reference_genome')),
+                "primer": os.path.abspath(params.get('primer')),
+                "primer_reference": os.path.abspath(params.get('primer_reference')),
+                "min_length": params.get('min_length'),
+                "coverage": params.get('coverage'),
+                "run_nextclade": params.get('run_nextclade', False), # Default to False if not specified
+                "nextclade_dataset": params.get('nextclade_dataset') # Can be None
+            }
+            # Final check that essential file paths exist
+            for key in ['reference_genome', 'primer', 'primer_reference']:
+                if not os.path.isfile(sample_row[key]):
+                    raise FileNotFoundError(f"File for '{key}' not found at '{sample_row[key]}'")
+
+            sample_data.append(sample_row)
+        except (KeyError, TypeError) as e:
+            print(f"  - Error: Missing a required key (e.g., 'reference_genome') for virus '{virus_id}' in virus config. Skipping sample '{barcode_dir_name}'. Details: {e}", file=sys.stderr)
+        except FileNotFoundError as e:
+            print(f"  - Error: {e}. Skipping sample '{barcode_dir_name}'. Please check paths in virus config.", file=sys.stderr)
+
+# --- Create and Save the DataFrame ---
 if not sample_data:
-    print(f"Warning: No valid barcode directories (e.g., 'barcode1', 'barcode49') found in '{raw_fastq_dir_abs}'.")
-    print("The generated sample.tsv file will be empty or contain only headers.")
-    # Depending on Snakemake requirements, you might want to exit here:
-    # print("Exiting because no samples were found.")
-    # sys.exit(1)
+    print("\nWarning: No valid samples were processed. The generated sample.tsv will be empty.", file=sys.stderr)
 
-# Create a pandas DataFrame
-samples_df = pd.DataFrame(sample_data)
+# Define column order for consistency
+expected_columns = [
+    'unique_id', 'sequence_name', 'fastq_path', 'virus_id', 'reference_genome', 'primer',
+    'primer_reference', 'min_length', 'coverage', 'run_nextclade', 'nextclade_dataset'
+]
+samples_df = pd.DataFrame(sample_data, columns=expected_columns)
 
-# Sort by UniqueID for consistency (optional but nice)
 if not samples_df.empty:
     samples_df = samples_df.sort_values(by="unique_id").reset_index(drop=True)
 
-# Define the output path for sample.tsv within the project directory
 samples_tsv_path = os.path.join(project_dir, "sample.tsv")
-
-# Write the DataFrame to a TSV file
 try:
     samples_df.to_csv(samples_tsv_path, sep='\t', index=False)
-    print(f"Generated sample sheet: {samples_tsv_path}")
-    if samples_df.empty:
-        print("Note: The sample sheet is empty as no valid barcode directories were found.")
+    print(f"\nGenerated sample sheet with {len(samples_df)} samples: {samples_tsv_path}")
 except Exception as e:
-    print(f"Error writing sample sheet to {samples_tsv_path}: {e}")
+    print(f"Error writing sample sheet to {samples_tsv_path}: {e}", file=sys.stderr)
     sys.exit(1)
 
-### Set numeric values
-min_length = args.min_length
-coverage = args.coverage
-threads = args.threads
-
-### Need to expand this with "use_nextclade"
-config_data = {
-    "threads": threads,
-	"use_sars_cov_2_workflow": args.use_sars_cov_2_workflow # Either 'True' or 'False'. 
-}
-
-# Add nextclade to config.yaml
-if nextclade_dataset_identifier:  # If --nextclade_dataset argument was provided
-    config_data["run_nextclade"] = True
-else: # If --nextclade_dataset argument was NOT provided
-    config_data["run_nextclade"] = False
-
-# Define config file path within project directory
-yaml_file = os.path.join(project_dir, "config.yaml")
-
-# Write the config data to YAML
-try:
-    with open(yaml_file, "w") as outfile:
-        # Use sort_keys=False to maintain the order defined in the dictionary
-        yaml.dump(config_data, outfile, default_flow_style=False, sort_keys=False)
-    print(f"Created configuration file: {yaml_file}")
-except Exception as e:
-    print(f"Error writing configuration file {yaml_file}: {e}")
-    sys.exit(1)
 
 # Victory lap
 print("\nProject setup complete.")
 print(f"Project Directory: {project_dir}")
 print(f"Snakemake File: {dest_snakemake}")
 print(f"Sample Sheet: {samples_tsv_path}")
-print(f"Config File: {yaml_file}")
 print("\nYou can now navigate to the project directory and run Snakemake.")

@@ -10,42 +10,90 @@ from collections import defaultdict
 import pandas as pd
 import os
 
-configfile: "config.yaml"
 
 # Load in sample data
 sample_data = pd.read_csv("sample.tsv", sep="\t")
 SAMPLES = sample_data["unique_id"].tolist()
 
-ALIGNMENT_REFERENCE = sample_data.iloc[0]["reference"]
-NEXTCLADE_DB = sample_data.iloc[0]["nextclade_db"]
+# Get a list of all unique viruses in this run
+VIRUSES = sample_data["virus_id"].unique().tolist()
 
 sample_data = sample_data.set_index('unique_id')
 sample_data = sample_data.to_dict("index")
 
+
+# Helper functions:
+def get_virus_param(wildcards, param_name):
+    """
+    Finds the first sample belonging to a virus group and returns a specific parameter for it.
+    """
+    virus = wildcards.virus
+    # Use next() with a generator for efficiency. It finds the first match.
+    sample_for_virus = next(s for s, data in sample_data.items() if data['virus_id'] == virus)
+    # Return the requested parameter from that sample's data.
+    return sample_data[sample_for_virus][param_name]
+
+def get_required_nextclade_datasets():
+    """
+    Scans the sample sheet and returns a unique list of all nextclade_dataset
+    identifiers that are needed for this run and are not local paths.
+    """
+    datasets = set()
+    for sample, data in sample_data.items():
+        # Only consider samples where nextclade is set to run
+        if data.get('run_nextclade', False):
+            dataset_id = data.get('nextclade_dataset')
+            # Add to the set if it's not None and doesn't look like an absolute/existing path
+            if dataset_id and not os.path.isdir(dataset_id):
+                datasets.add(dataset_id)
+    return list(datasets)
+
+def get_nextclade_dataset_path(wildcards):
+    """
+    Determines the correct path for the nextclade dataset for a given virus.
+    If it's a local path in the config, it returns that.
+    If it's an official name, it returns the path where it WILL BE downloaded.
+    """
+    dataset_id = get_virus_param(wildcards, 'nextclade_dataset')
+    if os.path.isdir(dataset_id):
+        return dataset_id # It's a pre-existing local path
+    else:
+        # It's an official name, so return the path where we will download it.
+        # We replace '/' with '_' to create a valid directory name.
+        safe_name = dataset_id.replace('/', '_')
+        return f"result/nextclade_downloads/{safe_name}"
+
+
 # The 'rule all' needs to request the final outputs based on the chosen workflow
-def get_final_outputs(wildcards):
+def get_final_outputs():
     outputs = []
-    # Standard outputs - just append the file path strings
-    outputs.append("result/alignment/all_consensus_aligned.fasta")
+    required_dataset_paths = []
+    for virus in VIRUSES:
+        # Aggragted alignment for this virus
+        outputs.append(f"result/{virus}/alignment/all_consensus_aligned.fasta")
+        outputs.append(f"result/{virus}/variants/all_variants.tsv")
+    
+        if any(d.get('run_nextclade', False) for s, d in sample_data.items() if d['virus_id'] == virus):
+             outputs.append(f"result/{virus}/nextclade/success.txt")
+             # Determine the required dataset path for this virus and add it to our list
+             dataset_id = next(d['nextclade_dataset'] for s, d in sample_data.items() if d['virus_id'] == virus and d.get('run_nextclade'))
+             if not os.path.isdir(dataset_id):
+                 safe_name = dataset_id.replace('/', '_')
+                 required_dataset_paths.append(f"result/nextclade_downloads/{safe_name}")
+
+    # Non-grouped outputs
     outputs.append("result/readstats/raw.tsv")
     outputs.append("result/readstats/QC.tsv")
     outputs.append("result/readstats/trimmed.tsv")
     outputs.append("result/readstats/mapped.tsv")
-    outputs.append("result/variants/all_variants.tsv")
-
-    if config.get("run_nextclade", False):
-        # Use consistent path 'result/' and correct append syntax
-        outputs.append("result/pangolin.csv")
-        outputs.append("result/nextclade/nextclade.json")
-        outputs.append("result/nextclade/success.txt")
-        outputs.append("official_datasets.txt")
-
+    
+    outputs.extend(list(set(required_dataset_paths)))
     # Ensure return is correctly indented at the function level
     return outputs
 
 rule all:
     input:
-        get_final_outputs
+        get_final_outputs()
 
 rule merge_barcodes:
     input:
@@ -102,7 +150,7 @@ rule trim_primers:
         "logs/{sample_id}_ampliclip.log"
     params:
         reference=lambda wildcards: sample_data[wildcards.sample_id]["primer_reference"],
-        primers=lambda wildcards: sample_data[wildcards.sample_id]["primers"],
+        primers=lambda wildcards: sample_data[wildcards.sample_id]["primer"],
         min_length=lambda wildcards: sample_data[wildcards.sample_id]["min_length"]
     threads: 1
     shell:
@@ -130,7 +178,7 @@ rule map_to_reference:
         filtered="result/filtered/{sample_id}_filtered.fastq"
     threads: 8
     params:
-        reference=lambda wildcards: sample_data[wildcards.sample_id]["reference"]
+        reference=lambda wildcards: sample_data[wildcards.sample_id]["reference_genome"]
     shell:
         """
         minimap2 -Y -t {threads} -x map-ont -a {params.reference} {input.fastq} 2> /dev/null | samtools view -bF 4 - | samtools sort -@ {threads} - > {output.bam}
@@ -147,7 +195,7 @@ rule create_consensus:
         vf_raw=temp("result/variants/{sample_id}_variants_raw.tsv")
     threads: 8
     params:
-        reference=lambda wildcards: sample_data[wildcards.sample_id]["reference"],
+        reference=lambda wildcards: sample_data[wildcards.sample_id]["reference_genome"],
         coverage=lambda wildcards: sample_data[wildcards.sample_id]["coverage"],
         sequence_name=lambda wildcards: sample_data[wildcards.sample_id]["sequence_name"]
     shell:
@@ -181,11 +229,17 @@ rule add_samplename_to_variants:
             {input.vf_raw} > {output.vf}
         """
 
+# Helper function to get all VARIANTS for a specific virus
+def get_variants_for_virus(wildcards):
+    samples_for_this_virus = [s for s, data in sample_data.items() if data['virus_id'] == wildcards.virus]
+    return expand("result/variants/{sample_id}_variants.tsv", sample_id=samples_for_this_virus)
+
 rule aggregate_variants:
     input:
-        expand("result/variants/{sample_id}_variants.tsv", sample_id=SAMPLES)
+        #expand("result/variants/{sample_id}_variants.tsv", sample_id=SAMPLES)
+        get_variants_for_virus
     output:
-        all_vf="result/variants/all_variants.tsv"
+        all_vf="result/{virus}/variants/all_variants.tsv"
     threads: 1
     shell:
         """
@@ -203,106 +257,96 @@ rule aggregate_variants:
         fi
         """
 
+# Helper function to get all CONSENSUS files for a specific virus
+def get_consensus_for_virus(wildcards):
+    samples_for_this_virus = [s for s, data in sample_data.items() if data['virus_id'] == wildcards.virus]
+    return expand("result/consensus/{sample_id}_consensus.fasta", sample_id=samples_for_this_virus)
+
 rule aggregate_consensus:
     input:
-        expand("result/consensus/{sample_id}_consensus.fasta",sample_id=SAMPLES)
+        #expand("result/consensus/{sample_id}_consensus.fasta",sample_id=SAMPLES)
+        get_consensus_for_virus
     output:
-        "result/alignment/all_consensus.fasta"
+        "result/{virus}/alignment/all_consensus.fasta"
     threads: 1
     shell:
         """
         cat {input} > {output}
         """
 
-if config.get("run_nextclade", False):
-    rule run_pangolin:
-        input:
-            "result/alignment/all_consensus.fasta"
-        output:
-            "result/pangolin.csv"
-        threads: 1
-        shell:
-            """
-            pangolin {input} --outfile {output}
-            """
+rule prepare_nextclade_dataset:
+    output:
+        # The output is a directory that will contain the dataset.
+        # The wildcard 'dataset_path' will match the safe name, e.g., 'nextstrain_sars-cov-2_wuhan-hu-1_orfs'
+        directory("result/nextclade_downloads/{dataset_path}")
+    params:
+        # The input to this rule is the original, unsafe dataset name with slashes
+        # We reverse the transformation to get the original name.
+        original_name=lambda wildcards: wildcards.dataset_path.replace('_', '/')
+    log:
+        "logs/nextclade_download_{dataset_path}.log"
+    shell:
+        """
+        echo "Preparing Nextclade dataset: {params.original_name}" > {log}
+        # This rule only runs for official datasets. The `rule all` logic prevents it from
+        # running for local paths. Therefore, we can just run the download command.
+        nextclade dataset get --name '{params.original_name}' --output-dir '{output}' >> {log} 2>&1
+        """
 
-    rule check_dataset:
-        output:
-            "official_datasets.txt"
-        params:
-            database=NEXTCLADE_DB
-        shell:
-            """
-            set -euo pipefail
 
-            # Fetch the list of official datasets
-            nextclade dataset list --only-names > official_datasets.txt
+rule run_nextclade:
+    input:
+        consensus="result/{virus}/alignment/all_consensus.fasta",
+        dataset_dir=lambda wildcards: get_nextclade_dataset_path(wildcards)
+    output:
+        outdir=directory("result/{virus}/nextclade/"),
+        json="result/{virus}/nextclade/nextclade.json"
+    shell:
+       """
+       echo "Running Nextclade for {wildcards.virus} using dataset at: {input.dataset_dir}"
+       nextclade run \
+       --input-dataset {input.dataset_dir} \
+       --output-all={output.outdir} \
+       --output-json={output.json} \
+       {input.consensus}
+       """
 
-            # Strip quotes (if any) from the dataset name
-            CLEANED_DB=$(echo {params.database} | tr -d "'")
-
-            # Try to find it in the official dataset list
-            if grep -q "^$CLEANED_DB$" official_datasets.txt; then
-                echo "Official dataset found: $CLEANED_DB"
-                nextclade dataset get --name "$CLEANED_DB" --output-dir "$CLEANED_DB"
-            else
-                echo "Custom dataset detected: $CLEANED_DB Â— skipping download"
-            fi
-            """
-
-    rule run_nextclade:
-        input:
-            "result/alignment/all_consensus.fasta"
-        params:
-            database=NEXTCLADE_DB,
-            output_dir="result/nextclade/",
-            gff3="genome_annotation.gff3"
-        output:
-            "result/nextclade/nextclade.json"
-        shell:
-           """
-           nextclade read-annotation {params.database}/{params.gff3} --output {params.output_dir}/genome_annotation.json 
-                     
-           nextclade run \
-           --input-dataset {params.database} \
-           --output-all={params.output_dir} \
-           {input}
-           """
-
-    rule visualize_mutation_table:
-        input:
-            nextclade_json="result/nextclade/nextclade.json"
-        output:
-            success="result/nextclade/success.txt"
-        params:
-            nextclade_input_dir="result/nextclade",
-            plotly_output_dir="result/nextclade/plotly",
-            ggplotly_output_dir="result/nextclade/ggplotly"
-        shell:
-            """
-            Rscript ~/scripts/r/viz_nextclade_cli.R \
-            --nextclade-input-dir {params.nextclade_input_dir} \
-            --json-file {input.nextclade_json} \
-            --plotly-output-dir {params.plotly_output_dir} \
-            --ggplotly-output-dir {params.ggplotly_output_dir}
-            """
+rule visualize_mutation_table:
+    input:
+        nextclade_json="result/{virus}/nextclade/nextclade.json"
+    output:
+        success="result/{virus}/nextclade/success.txt"
+    log:
+        "logs/{virus}_visualize_mutation_table.log"
+    params:
+        nextclade_input_dir="result/{virus}/nextclade",
+        plotly_output_dir="result/{virus}/nextclade/plotly",
+        ggplotly_output_dir="result/{virus}/nextclade/ggplotly"
+    shell:
+        """
+        Rscript /viz_nextclade_cli.R \
+        --nextclade-input-dir {params.nextclade_input_dir} \
+        --json-file {input.nextclade_json} \
+        --plotly-output-dir {params.plotly_output_dir} \
+        --ggplotly-output-dir {params.ggplotly_output_dir} > {log} 2>&1
+        """
 
 
 rule align_consensus:
     input:
-        "result/alignment/all_consensus.fasta"
+        "result/{virus}/alignment/all_consensus.fasta"
     output:
-        "result/alignment/all_consensus_aligned.fasta"
+        "result/{virus}/alignment/all_consensus_aligned.fasta"
     threads: 8
     ##
     log:
-        "logs/align_consensus.log"
+        "logs/{virus}_align_consensus.log"
     params:
-        reference=ALIGNMENT_REFERENCE
+        reference=lambda wildcards: get_virus_param(wildcards, 'reference_genome')
     shell:
         """
-        minimap2 -t {threads} -a -x asm20 --sam-hit-only --secondary=no --score-N=0 {params.reference} {input} -o result/alignment/all_consensus_aligned.sam > {log} 2>&1
-        gofasta sam toMultiAlign -s result/alignment/all_consensus_aligned.sam -o {output}
+        minimap2 -t {threads} -a -x asm20 --sam-hit-only --secondary=no --score-N=0 {params.reference} {input} -o result/{wildcards.virus}/alignment/all_consensus_aligned.sam > {log} 2>&1
+        gofasta sam toMultiAlign -s result/{wildcards.virus}/alignment/all_consensus_aligned.sam -o {output}
         """
 
 ### STATS GENERATION ###
