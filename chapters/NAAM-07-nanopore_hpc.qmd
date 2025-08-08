@@ -12,7 +12,7 @@ We can make use of a tool called [Snakemake](https://snakemake.readthedocs.io/en
 
 To run the automated workflow, you'll need to make sure that your project directory is set up correctly.
 
-To make the project setup process even easier, we've created a simple command-line tool called `amplicon_project.py`. This tool automates the creation of the project directory, the sample configuration file (`sample.tsv`), and the general settings configuration file (`config.yaml`), guiding you through each step with clear prompts and error checking.
+To make the project setup process even easier, we've created a simple command-line tool called `amplicon_project.py`. This tool automates the creation of the project directory and the sample configuration file (`sample.tsv`), guiding you through each step with clear prompts and error checking.
 
 The amplicon_project.py tool is built into the singularity container image. Instead of using `singularity shell`, we can use `singularity exec` to directly execute commands. Try accessing amplicon_project.py:
 
@@ -21,10 +21,9 @@ singularity exec naam_workflow.sif python /amplicon_project.py --help
 ```
 
 ```default
-usage: amplicon_project.py [-h] [-p PROJECT_DIR] -n STUDY_NAME -d RAW_FASTQ_DIR -P PRIMER -r PRIMER_REFERENCE -R REFERENCE_GENOME [-m MIN_LENGTH] [-c COVERAGE] [-t THREADS] [--use_sars_cov_2_workflow]
-                           [--nextclade_dataset NEXTCLADE_DATASET]
+usage: amplicon_project.py [-h] [-p PROJECT_DIR] -n STUDY_NAME -d RAW_FASTQ_DIR --virus-config VIRUS_CONFIG --sample-map SAMPLE_MAP
 
-Interactive tool for setting up a Snakemake project.
+Interactive tool for setting up a multi-virus amplicon analysis project.
 
 options:
   -h, --help            show this help message and exit
@@ -33,31 +32,19 @@ options:
   -n STUDY_NAME, --study_name STUDY_NAME
                         Name of the study
   -d RAW_FASTQ_DIR, --raw_fastq_dir RAW_FASTQ_DIR
-                        Directory containing raw FASTQ files
-  -P PRIMER, --primer PRIMER
-                        Fasta file containing primer sequences
-  -r PRIMER_REFERENCE, --primer_reference PRIMER_REFERENCE
-                        Fasta file containing primer reference sequence
-  -R REFERENCE_GENOME, --reference_genome REFERENCE_GENOME
-                        Fasta file containing reference genome
-  -m MIN_LENGTH, --min_length MIN_LENGTH
-                        Minimum read length (default: 1000)
-  -c COVERAGE, --coverage COVERAGE
-                        Minimum coverage required for consensus (default: 30)
-  -t THREADS, --threads THREADS
-                        Maximum number of threads for the Snakefile (default: 8)
-  --use_sars_cov_2_workflow
-                        Add this parameter if you want to analyze SARS-CoV-2 data
-  --nextclade_dataset NEXTCLADE_DATASET
-                        Path to a custom Nextclade dataset directory, OR an official Nextclade dataset name (e.g., 'nextstrain/sars-cov-2/wuhan-hu-1/orfs'). Check official nextclade datasets with `nextclade
-                        dataset list`.
+                        Directory containing raw FASTQ barcode subdirectories
+  --virus-config VIRUS_CONFIG
+                        Path to the virus configuration YAML file.
+  --sample-map SAMPLE_MAP
+                        Path to the sample map CSV file.
+                        (CSV must have 'barcode_dir' and 'virus_id' columns)
 ```
 
-Now prepare your project directory with **amplicon_project.py** as follows:
+You can prepare your project directory with **amplicon_project.py** as follows:
 
 ``` bash
 singularity exec \
-  --bind /mnt/viro0002-data:/mnt/viro0002-data \
+  --bind /mnt/viro0002-data:/mnt/viro0002-data \ # Use whatever --bind is required for your context
   --bind $HOME:$HOME \
   --bind $PWD:$PWD \
   naam_workflow.sif \
@@ -65,56 +52,113 @@ singularity exec \
     -p {project.folder} \
     -n {name} \
     -d {reads} \
-    -m {min_length} \
-    -c {coverage} \
-    -P {primer} \
-    -r {primer.reference} \
-    -R {reference} \
-    -t {threads} \
-    --nextclade_dataset {nextclade.dataset}
+    --virus-config {virus_config.yaml} \
+    --sample-map {sample_map.csv}
 ```
 
-REQUIRED ARGUMENTS:
+::: callout-important
+Please use absolute paths for the **reads**, **virus_config.yaml** and **sample_map.csv** so that they can always be located.
+:::
 
 - `{project.folder}` is your project folder. This is where you run your workflow and store results.
 - `{name}` is the name of your study, no spaces allowed.
 - `{reads}` is the folder that contains your barcode directories (e.g. barcode01, barcode02).
-- `{min_length}` is the minimum length required for the reads to be accepted. This must be below the expected size of the amplicon, for example, for the 2500nt mpox amplicon we use a threshold of 1000
-- `{coverage}` is the minimum coverage required, anything lower than 30 is not recommended, for low accuracy basecalling, higher coverage is recommended.
-- `{primer}` is the file containing the primer sequences
-- `{primer.reference}` is the reference sequence .fasta file used for primer trimming.
-- `{reference}` is the reference sequence .fasta file used for the consensus generation.
+- `{virus_config.yaml}` is a yaml file specifying run parameters for your viruses. 
+- `{sample_map.csv}` is a **comma separated** file, specifying sample + virus combination. 
 
-OPTIONAL ARGUMENTS:
-
-- `{nextclade.dataset}` the path to an official or custom nextclade dataset. A list official nextclade datasets can be checked with the following command: `singularity exec naam_workflow.sif nextclade dataset list`. If you are using a self made custom nextclade dataset, then please provide the absolute path to the dataset.
-
-::: callout-important
-Please use absolute paths for the **reads**, **primers** and **references** so that they can always be located.
-:::
+### Binding directories
 
 The `--bind` arguments are needed to explicitly tell Singularity to mount the necessary host directories into the container. The part before the colon is the path on the host machine that you want to make available. The path after the colon is the path inside the container where the host directory should be mounted. 
 
 As a default, Singularity often automatically binds your home directory (`$HOME`) and the current directory (`$PWD`). We also explicitly bind `/mnt/viro0002-data` in this example. If your input files (reads, reference, databases) or output project directory reside outside these locations, you MUST add specific `--bind /host/path:/container/path` options for those locations, otherwise the container won't be able to find them.
 
-Once the setup is completed, move to your newly created project directory with `cd`, check where you are with `pwd`.
+### Virus config and sample map
 
-Next, use the `ls` command to list the files in the project directory and check if the following files are present: `sample.tsv`, `config.yaml` and `Snakefile`.
+The **virus config** file is the central "database" of all supported viruses and their specific parameters. This file contains information about file paths for references and primers, as well as analysis parameters for each virus.
 
--   The **sample.tsv** should have 9 columns:
-    - `unique_id`: the unique sample name that's generated based on the barcode directories.
-    - `sequence_name`: the name given to the consensus sequence at the end of the pipeline. It's generated with the following template: {study_name}_{unique_id}.
-    - `fastq_path`: the location of the raw .fastq.gz files per sample.
-    - `reference`: the location of the reference sequence for the consensus generation.
-    - `primers`: the location of the file containing the primer sequences.
-    - `primer_reference`: the location of the reference sequence for primer trimming.
-    - `coverage`: minimum coverage required.
-    - `min_length`: minimum length required.
-    - `nextclade_db`: path to the nextclade dataset. This column can be empty if you're not including Nextclade.
+Example of a virus config:
+```yaml
+sars-cov-2:
+  # Paths to reference and primer files
+  reference_genome: /path/to/reference.fasta
+  primer: /path/to/primer.fasta
+  primer_reference: /path/to/primer_reference.fasta
+  
+  # Required analysis parameters
+  min_length: 250
+  coverage: 30
+  
+  # Optional workflow steps
+  run_nextclade: true
+  nextclade_dataset: 'nextstrain/sars-cov-2/wuhan-hu-1/orfs' # Official Nextclade maintained dataset
 
--   The **config.yaml** determines if the SARS_CoV_2 section of the workflow is enabled and the amount of default threads to use.
+measles:
+  reference_genome: /path/to/reference.fasta
+  primer: /path/to/primer.fasta
+  primer_reference: /path/to/primer_reference.fasta
 
--   The **Snakefile** is the "recipe" for the workflow, describing all the steps we have done by hand, and it is most commonly placed in the root directory of your project (you can open the Snakefile with a text editor and have a look).
+  min_length: 100
+  coverage: 30
+  
+  run_nextclade: true
+  nextclade_dataset: '/path/to/custom/measles/dataset' # Custom user created dataset
+
+mpox:
+  reference_genome: /path/to/reference.fasta
+  primer: /path/to/primer.fasta
+  primer_reference: /path/to/primer_reference.fasta
+
+  min_length: 1000
+  coverage: 30
+  
+  run_nextclade: false # Nextclade will not run for this virus
+  nextclade_dataset: null
+
+# ... add other viruses if needed.
+```
+Key parameters within each virus entry include:
+
+- `reference_genome, primer, primer_reference`: Absolute paths to the respective FASTA files.
+- `min_length`: The minimum read length to keep after QC. Must be below the expected amplicon size.
+- `coverage`: The minimum read depth required for consensus calling. 30x is a common minimum.
+- `run_nextclade`: Set to true to enable the Nextclade analysis for this virus, false otherwise.
+- `nextclade_dataset`: Path to a Nextclade dataset. This can be an official dataset name (the workflow will download it) or an absolute path to a custom dataset you have locally.
+
+The **sample map** is a simple file to link each barcode/sample to a virus from the config. For each sample, amplicon_project.py uses its virus_id to pull the correct parameters (paths, min_length, etc.) from the virus config and place them into a sample.tsv.
+
+Example of a sample map:
+```bash
+barcode_dir,virus_id
+barcode01,sars-cov-2
+barcode02,sars-cov-2
+barcode03,measles
+barcode04,measles
+barcode05,mpox
+```
+
+- `barcode_dir`: name of barcode directory containing raw fastq.gz files. 
+- `virus_id`: virus name, must match with names in the virus config.
+
+After running amplicon_project.py, move to your newly created project directory with `cd`, check where you are with `pwd`.
+
+Next, use the `ls` command to list the files in the project directory and check if the following files are present: `sample.tsv` and `Snakefile`.
+
+The **sample.tsv** file is automatically generated by the setup script. It contains all the per-sample information the workflow needs to run. Each row represents one sample, with the following columns:
+
+- `unique_id`: a unique identifier for the sample, generated from the barcode directory name (e.g., BC01)
+- `sequence_name`: the final name for the consensus sequence, formatted as {study_name}_{unique_id}.
+- `fastq_path`: the location of the raw *.fastq.gz files.
+- `virus_id`: name of the virus.
+- `reference_genome`: the location of the reference sequence for the consensus generation.
+- `primer`: the location of the file containing the primer sequences.
+- `primer_reference`: the location of the reference sequence for primer trimming.
+- `min_length`: minimum length required.
+- `coverage`: minimum coverage required.
+- `run_nextclade`: true or false, determines if nextclade should be run.
+- `nextclade_dataset`: path to the nextclade dataset. This field can be empty if you're not running Nextclade.
+
+
+The **Snakefile** is the "recipe" for the workflow, describing all the steps we have done by hand, and it is most commonly placed in the root directory of your project (you can open the Snakefile with a text editor and have a look).
 
 ## 6.2 Running the workflow {.unnumbered}
 
@@ -132,5 +176,7 @@ singularity exec \
   --cores {threads} \
   --dryrun
 ```
+
+- `{threads}`: sets the maximum number of cores Snakemake can use in parallel. If you want a specific step of the workflow to utilize more threads, then you can manually edit the Snakefile.
 
 If no errors appear, then remove the `--dryrun` argument and run it again to fully execute the workflow.
