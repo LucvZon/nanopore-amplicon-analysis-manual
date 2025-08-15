@@ -7,12 +7,12 @@ Nextclade can utilize official and community datasets which are maintained at [g
 ## 5.1 How to use nextclade {.unnumbered}
 
 Gather a list of all official and community datasets:
-```
+```bash
 nextclade dataset list
 ```
 
 Download an official or community dataset:
-```
+```bash
 nextclade dataset get --name '{dataset}' --output-dir '{output}'
 ```
 
@@ -20,7 +20,7 @@ nextclade dataset get --name '{dataset}' --output-dir '{output}'
 - `{output}` is the location where the dataset will be downloaded. 
 
 Run nextclade:
-```
+```bash
 nextclade run \
 --input-dataset {dataset} \
 --output-all={output}/ \
@@ -37,10 +37,10 @@ When using Nextclade, make sure that the reference sequence of the dataset is th
 
 ## 5.2 Custom nextclade visualisation {.unnumbered}
 
-If your Nextclade dataset contained a GFF3 annotation file for the reference sequence, then you can use the [viz_nextclade_cli.R](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/tree/main/scripts) script to visualize the amino acid mutations per genetic feature.  
+If your Nextclade dataset contained a GFF3 annotation file for the reference sequence, then you can use the [viz_nextclade_cli.R](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/tree/main/scripts) script to visualize the amino acid mutations per genetic feature. The plots will be generated for each genetic feature of the reference sequence and are output as plotly and ggplotly versions.
 
 Execute the following:
-```
+```bash
 Rscript viz_nextclade_cli.R \
 --nextclade-input-dir {input_dir} \
 --json-file {input.json} \
@@ -49,11 +49,9 @@ Rscript viz_nextclade_cli.R \
 ```
 
 - `{nextclade-input-dir}` is the output folder from the nextclade run (step 5.1). 
-- `{json-file}` is the nextclade.json file that should be present in the output folder from the nextclade run (step 5.1). 
+- `{json-file}` is the nextclade.json file that should be present in the output folder from the nextclade run (step 5.1).
 - `{plotly-output-dir}` html plots made with plotly. 
 - `{ggplotly-output-dir}` html plots made with ggplotly. 
-
-The plots will be generated for each genetic feature of the reference sequence. Currently, we output plotly and ggplotly versions, just use whichever looks best to you. 
 
 ## 5.3 Pangolin (redundant)
 
