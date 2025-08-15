@@ -1,9 +1,10 @@
-# visualize_nextclade_json.R
+# visualize_nextclade_cli.R
 
 ## Use:
 # Rscript viz_nextclade_cli.R \
 # --nextclade-input-dir {nextclade_dir} \
 # --json-file {nextclade.json} \
+# --virconsens-variants {all_variants.tsv} \
 # --plotly-output-dir {plotly_dir} \
 # --ggplotly-output-dir {ggplotly_dir}
 
@@ -30,6 +31,8 @@ parser$add_argument("--nextclade-input-dir", type="character", required=TRUE,
                     help="Directory containing Nextclade output files (including nextclade.json and cds_translation files)")
 parser$add_argument("--json-file", type="character", required=TRUE,
                     help="Path to the main nextclade.json file")
+parser$add_argument("--virconsens-variants", type="character", required=TRUE,
+                    help="Aggregated TSV file with variants from Virconsens")
 parser$add_argument("--plotly-output-dir", type="character", required=TRUE,
                     help="Output directory for Plotly HTML files")
 parser$add_argument("--ggplotly-output-dir", type="character", required=TRUE,
@@ -41,6 +44,7 @@ args <- parser$parse_args()
 # Critical paths:
 base_result_dir <- args$nextclade_input_dir
 json_file_path <- args$json_file
+variants_file_path <- args$virconsens_variants
 plotly_output_dir <- args$plotly_output_dir
 ggplotly_output_dir <- args$ggplotly_output_dir
 
@@ -50,11 +54,11 @@ if(!dir.exists(ggplotly_output_dir)) dir.create(ggplotly_output_dir, recursive =
 
 cat("Nextclade input directory:", base_result_dir, "\n")
 cat("Main JSON file:", json_file_path, "\n")
+cat("Variant file:", variants_file_path, "\n")
 cat("Plotly output directory:", plotly_output_dir, "\n")
 cat("GGPlotly output directory:", ggplotly_output_dir, "\n")
 
 # --- Identify genetic features and their lengths (from FASTA files) ---
-# (This section is efficient and remains unchanged)
 cds_translation_files <- list.files(base_result_dir, pattern = "^nextclade\\.cds_translation.*\\.fasta$", full.names = TRUE)
 if (length(cds_translation_files) == 0) {
   stop(paste("No 'nextclade.cds_translation.*.fasta' files found in directory:", base_result_dir))
@@ -77,13 +81,103 @@ genetic_features_to_plot <- names(genetic_feature_info)
 if (length(genetic_features_to_plot) == 0) stop("No genetic features with valid lengths identified.")
 message(paste("Identified genetic features to plot:", paste(genetic_features_to_plot, collapse=", ")))
 
+# --- PRE-PROCESSING FOR ALLELE FREQUENCY ---
+message("Parsing Nextclade JSON to find causative nucleotide positions...")
 
-# --- Import main nextclade.json file ---
-# (This section remains unchanged)
 if (!file.exists(json_file_path)) {
   stop(paste("Error: The main JSON file", json_file_path, "was not found."))
 }
-message("Reading main JSON file...")
+
+# Load with flatten = TRUE for this specific task
+raw_json_data_flat <- fromJSON(json_file_path, flatten = TRUE)
+
+if (!is.null(raw_json_data_flat$results) && "aaChangesGroups" %in% names(raw_json_data_flat$results)) {
+  final_df <- raw_json_data_flat$results %>%
+    select(seqName, aaChangesGroups) %>%
+    unnest(cols = aaChangesGroups) %>%
+    unnest(cols = changes) %>%
+    unnest(cols = nucRanges) %>%
+    filter(refAa != qryAa, nchar(refTriplet) == 3, nchar(qryTriplet) == 3) %>%
+    rowwise() %>%
+    mutate(
+      nuc_muts = list({
+        ref_nucs <- strsplit(refTriplet, "")[[1]]
+        qry_nucs <- strsplit(qryTriplet, "")[[1]]
+        nuc_df_list <- list()
+        for (i in 1:3) {
+          if (ref_nucs[i] != qry_nucs[i]) {
+            nuc_df_list[[length(nuc_df_list) + 1]] <- tibble(nuc_pos_0idx = begin + i - 1)
+          }
+        }
+        if (length(nuc_df_list) > 0) bind_rows(nuc_df_list) else NULL
+      })
+    ) %>%
+    ungroup() %>%
+    select(seqName, cdsName, position = pos, nuc_muts, qryAa) %>% # Use 'position' for consistency
+    unnest(cols = nuc_muts)
+} else {
+  final_df <- tibble(seqName=character(), cdsName=character(), position=integer(), nuc_pos_0idx=integer())
+}
+
+# --- Load Virconsens Allele Frequency Data ---
+message("Loading virconsens allele frequency data...")
+virconsens_file <- file.path(variants_file_path)
+
+if (length(virconsens_file) > 0) {
+  virconsens_variants_df <- read.delim(virconsens_file) %>%
+    # Exclude all deletions/insertions
+    dplyr::filter(nchar(REF) == 1 & nchar(ALT) == 1) %>%
+    # Select and rename columns for clarity and joining
+    select(
+      seqName = sample_name,
+      nuc_pos_0idx = ref_pos,
+      ALT_AF
+    ) %>%
+    # Ensure no duplicates for the join key (seqName, nuc_pos_0idx)
+    distinct(seqName, nuc_pos_0idx, .keep_all = TRUE)
+  
+  message(paste("Loaded allele frequency data for", n_distinct(virconsens_variants_df$seqName), "sequences."))
+} else {
+  message("Warning: No virconsens '.variants.tsv' files found. Allele frequency will not be added.")
+  virconsens_variants_df <- tibble(
+    seqName = character(),
+    nuc_pos_0idx = integer(),
+    ALT_AF = numeric()
+  )
+}
+
+# Combine and aggregate to get one AF value per AA mutation (using max)
+message("Creating Allele Frequency lookup table...")
+if (nrow(virconsens_variants_df > 0)) {
+  af_lookup_table <- final_df %>%
+    left_join(virconsens_variants_df, by = c("seqName", "nuc_pos_0idx")) %>%
+    filter(qryAa != "-" & !is.na(ALT_AF)) %>%
+    group_by(seqName, cdsName, position) %>%
+    summarise(
+      # Take the max AF of all nucleotide changes causing this AA change
+      min_ALT_AF = min(ALT_AF, na.rm = TRUE),
+      .groups = 'drop'
+    )
+} else {
+  message("No variants found in virconsens '.variants.tsv'. Allele frequency will not be added.")
+  af_lookup_table <- tibble(
+    seqName = character(),
+    cdsName = character(),
+    position = integer(),
+    min_ALT_AF = numeric()
+  )
+}
+
+
+
+# --- MAIN VISUALIZATION CODE ---
+
+# Load the JSON again, this time for the main parsing logic
+# --- Import main nextclade.json file ---
+if (!file.exists(json_file_path)) {
+  stop(paste("Error: The main JSON file", json_file_path, "was not found."))
+}
+message("Reading main JSON file again")
 raw_json_data <- fromJSON(json_file_path, 
                           flatten = FALSE, 
                           simplifyVector = FALSE, 
@@ -101,6 +195,7 @@ if (length(all_processed_seqnames) == 0) stop("No sequence names found in JSON r
 
 
 # Helper function to create mutation labels (1-indexed for display)
+# OPTIMIZATION: Rewritten using case_when to be fully vectorized for use with dplyr::mutate
 create_mutation_label <- function(type, pos_0idx, ref = NULL, alt = NULL, ins_seq = NULL) {
   pos_1idx <- pos_0idx + 1
   
@@ -114,6 +209,7 @@ create_mutation_label <- function(type, pos_0idx, ref = NULL, alt = NULL, ins_se
 }
 
 
+# --- Parse ALL mutations from the JSON into one tidy dataframe ---
 message("Parsing all mutations from JSON into a single dataframe...")
 
 all_mutations_df <- map_dfr(raw_json_data$results, function(seq_result) {
@@ -168,7 +264,6 @@ all_mutations_df <- map_dfr(raw_json_data$results, function(seq_result) {
 }) %>%
   filter(!is.na(position)) # Basic cleaning
 
-
 # Ensure optional columns exist, even if no such mutations are found in the JSON.
 # This prevents errors if a dataset is missing e.g., all insertions.
 if (!"ref" %in% names(all_mutations_df)) {
@@ -181,7 +276,7 @@ if (!"ins_seq" %in% names(all_mutations_df)) {
   all_mutations_df <- all_mutations_df %>% mutate(ins_seq = NA_character_)
 }
 
-
+# --- Pre-process the entire dataset at once ---
 message("Pre-processing and creating tooltips for all mutations...")
 
 if (nrow(all_mutations_df) > 0) {
@@ -189,6 +284,8 @@ if (nrow(all_mutations_df) > 0) {
   proximity_threshold <- 3
   
   all_mutations_processed_df <- all_mutations_df %>%
+    ## --- THE KEY JOIN --- ##
+    left_join(af_lookup_table, by = c("seqName", "cdsName", "position")) %>%
     mutate(label = create_mutation_label(mutation_type, position, ref, alt, ins_seq)) %>%
     mutate(priority = case_when(mutation_type %in% c("Substitution", "Deletion", "Insertion") ~ 1, 
                                 mutation_type == "Unknown" ~ 2, TRUE ~ 3)) %>%
@@ -200,7 +297,10 @@ if (nrow(all_mutations_df) > 0) {
         mutation_type == "Substitution" ~ alt,
         TRUE ~ NA_character_
       ),
-      tooltip_item_str = paste(position, mutation_type, label)
+      tooltip_item_str = case_when(
+        !is.na(min_ALT_AF) ~ paste0(position, " ", mutation_type, " ", label, " (Min AF: ", scales::percent(min_ALT_AF, accuracy = 0.1), ")"),
+        TRUE ~ paste(position, mutation_type, label)
+      )
     ) %>%
     group_by(seqName, cdsName) %>%
     arrange(position, .by_group = TRUE) %>%
@@ -212,8 +312,7 @@ if (nrow(all_mutations_df) > 0) {
       )
     ) %>%
     ungroup() %>%
-    select(-priority, -ref, -alt, -ins_seq, -tooltip_item_str)
-  
+    select(-priority, -ref, -alt, -ins_seq, -tooltip_item_str, -min_ALT_AF)
   
   # Create a separate, summarized dataframe for the Unknown ranges
   message("Consolidating consecutive 'Unknown' ranges for efficient plotting...")
@@ -249,7 +348,6 @@ for (current_feature_name in genetic_features_to_plot) {
   
   feature_df <- all_mutations_processed_df %>% filter(cdsName == current_feature_name)
   
-  ## NEW ##
   # Filter the consolidated unknown ranges for the current feature
   data_for_unknown_rects_feature <- unknown_ranges_df %>% filter(cdsName == current_feature_name)
   
