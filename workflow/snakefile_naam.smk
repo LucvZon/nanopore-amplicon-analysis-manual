@@ -313,7 +313,8 @@ rule run_nextclade:
 
 rule visualize_mutation_table:
     input:
-        nextclade_json="result/{virus}/nextclade/nextclade.json"
+        nextclade_json="result/{virus}/nextclade/nextclade.json",
+        variants_tsv="result/{virus}/variants/all_variants.tsv"
     output:
         success="result/{virus}/nextclade/success.txt"
     log:
@@ -324,11 +325,14 @@ rule visualize_mutation_table:
         ggplotly_output_dir="result/{virus}/nextclade/ggplotly"
     shell:
         """
+        set -euo pipefail
+
         Rscript /viz_nextclade_cli.R \
         --nextclade-input-dir {params.nextclade_input_dir} \
         --json-file {input.nextclade_json} \
+        --virconsens-variants {input.variants_tsv} \
         --plotly-output-dir {params.plotly_output_dir} \
-        --ggplotly-output-dir {params.ggplotly_output_dir} > {log} 2>&1
+        --ggplotly-output-dir {params.ggplotly_output_dir} 2>&1 | tee {log}
         """
 
 
@@ -392,7 +396,7 @@ rule generate_readstats_mapped:
     shell:
         """
         for file in {input}; do
-            samtools fastq $file | seqkit stats -T --stdin-label $file | tail -1
+            samtools fastq $file | seqkit stats -T --stdin-label $file
         done > {output}
         """
 
@@ -400,21 +404,26 @@ rule generate_readstats_mapped:
 onsuccess:
     """
     This code runs only after the entire workflow completes successfully.
-    It removes the .snakemake directory.
+    It launches a detached, background process to remove the .snakemake
+    directory a few seconds after the main workflow process exits.
+    This avoids the "file handle in use" race condition.
     """
+    import subprocess
+    import shlex
+
     print("Workflow finished successfully.")
-    snakemake_dir = ".snakemake" # The directory Snakemake creates
+    print("Spawning a detached cleanup process to remove .snakemake directory in a few seconds...")
 
-    if os.path.exists(snakemake_dir):
-        try:
-            print(f"Attempting to remove {snakemake_dir} directory...")
-            shutil.rmtree(snakemake_dir)
-            print(f"Successfully removed {snakemake_dir}.")
-        except OSError as e:
-            print(f"Error removing {snakemake_dir}: {e}")
-    else:
-        print(f"{snakemake_dir} directory not found. Skipping removal.")
-
+    cleanup_script = "import time, shutil; time.sleep(2); shutil.rmtree('.snakemake', ignore_errors=True)"
+    command = shlex.split(f'{sys.executable} -c "{cleanup_script}"')
+    
+    subprocess.Popen(
+        command,
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    
 onerror:
     """
     Optional: This code runs if the workflow fails at any point.
