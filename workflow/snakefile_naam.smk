@@ -10,6 +10,14 @@ from collections import defaultdict
 import pandas as pd
 import os
 
+# Check for an environment variable that is ONLY set inside the Singularity container.
+# If it exists, we are in the container. Otherwise, we are running locally.
+if "SINGULARITY_NAME" in os.environ:
+    # We are in the container, scripts are in the root.
+    SCRIPT_PATH = "/" 
+else:
+    # We are running locally, scripts are in the 'scripts' sub-directory.
+    SCRIPT_PATH = "scripts/"
 
 # Load in sample data
 sample_data = pd.read_csv("sample.tsv", sep="\t")
@@ -151,7 +159,8 @@ rule trim_primers:
     params:
         reference=lambda wildcards: sample_data[wildcards.sample_id]["primer_reference"],
         primers=lambda wildcards: sample_data[wildcards.sample_id]["primer"],
-        min_length=lambda wildcards: sample_data[wildcards.sample_id]["min_length"]
+        min_length=lambda wildcards: sample_data[wildcards.sample_id]["min_length"],
+        mismatch=lambda wildcards: sample_data[wildcards.sample_id]["primer_allowed_mismatch"]
     threads: 1
     shell:
         """
@@ -164,7 +173,7 @@ rule trim_primers:
         --primerfile {params.primers} \
         --referencefile {params.reference}\
         -fwd LEFT -rev RIGHT \
-        --padding 20 --mismatch 2 --minlength {params.min_length} > {log} 2>&1
+        --padding 20 --mismatch {params.mismatch} --minlength {params.min_length} > {log} 2>&1
 
         samtools sort {output.clipped}_ > {output.clipped}
         rm {output.clipped}_
@@ -320,6 +329,7 @@ rule visualize_mutation_table:
     log:
         "logs/{virus}_visualize_mutation_table.log"
     params:
+        r_script=os.path.join(SCRIPT_PATH, "viz_nextclade_cli.R"),
         nextclade_input_dir="result/{virus}/nextclade",
         plotly_output_dir="result/{virus}/nextclade/plotly",
         ggplotly_output_dir="result/{virus}/nextclade/ggplotly"
@@ -327,7 +337,7 @@ rule visualize_mutation_table:
         """
         set -euo pipefail
 
-        Rscript /viz_nextclade_cli.R \
+        Rscript {params.r_script} \
         --nextclade-input-dir {params.nextclade_input_dir} \
         --json-file {input.nextclade_json} \
         --virconsens-variants {input.variants_tsv} \
