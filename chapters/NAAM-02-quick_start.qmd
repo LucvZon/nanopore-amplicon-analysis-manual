@@ -24,10 +24,10 @@ The workflow is distributed as a self-contained Singularity container image, whi
 Download the required workflow image file (`naam_workflow.sif`) directly through the terminal:
 
 ```bash
-wget https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/download/v2.0.3/naam_workflow.sif
+wget https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/latest/download/naam_workflow.sif
 ```
 
-Or go to the [github page](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/tag/v2.0.3){target="_blank"} and manually download it there, then transfer it to your HPC system.
+Or go to the [github page](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/latest){target="_blank"} and manually download it there, then transfer it to your HPC system.
 
 ## 1.3 Verify Container {.unnumbered}
 
