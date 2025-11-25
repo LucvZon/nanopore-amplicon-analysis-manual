@@ -34,10 +34,23 @@ def check_for_updates(repo_owner: str, repo_name: str):
         RED = '\033[91m'
         ENDC = '\033[0m'
 
-    # 1. Get the local version from the file inside the container
-    local_version_file = Path("/NAAM_VERSION")
-    if not local_version_file.exists():
-        # If the file doesn't exist, we can't check, so we just skip.
+    # Define the two possible locations for the version file.
+    container_path = Path("/NAAM_VERSION")
+
+    # When running locally, the script is in '.../scripts/amplicon_project.py'.
+    # The version file is in the project root, so we go up two directories.
+    script_location = Path(__file__).resolve() # Absolute path to this script
+    project_root = script_location.parent.parent # .../scripts/ -> .../
+    local_path = project_root / "NAAM_VERSION"
+
+    # Now, figure out which one to use.
+    if container_path.exists():
+        local_version_file = container_path
+    elif local_path.exists():
+        local_version_file = local_path
+    else:
+        # If neither file exists, we can't check, so we just skip.
+        print("Warning: NAAM_VERSION file not found in standard locations. Skipping update check.", file=sys.stderr)
         return
 
     local_version_str = local_version_file.read_text().strip()
@@ -93,7 +106,6 @@ def check_for_updates(repo_owner: str, repo_name: str):
             print(f"\n\n{Colors.RED}Aborting script.{Colors.ENDC}", file=sys.stderr)
             sys.exit(1)
 
-
 # Argument parsing
 parser = argparse.ArgumentParser(
     description="Interactive tool for setting up a multi-virus amplicon analysis project.",
@@ -108,6 +120,7 @@ parser.add_argument("--sample-map", required=True, help="Path to the sample map 
 args = parser.parse_args() # reads command from user
 
 check_for_updates(repo_owner="LucvZon", repo_name="nanopore-amplicon-analysis-manual")
+
 
 ### Project directory path
 # Use abspath to ensure it's absolute before using it to join other paths
@@ -126,11 +139,22 @@ else:
         sys.exit(1)
 print(f"Using project directory: {project_dir}")
 
+
 ### Copy Snakemake file and update STUDY_NAME
-src_snakemake = "/snakefile_naam.smk" # This path is set for the singularity image
-if not os.path.exists(src_snakemake):
-    print(f"Error: Source Snakemake file '{src_snakemake}' not found.")
-    # Potentially exit here, or provide a way to specify it
+# --- Robustly find the source Snakefile ---
+container_snakefile_path = Path("/snakefile_naam.smk")
+
+# When local, it's in '<project_root>/workflow/snakefile_naam.smk'
+script_location = Path(__file__).resolve()
+project_root = script_location.parent.parent
+local_snakefile_path = project_root / "workflow" / "snakefile_naam.smk"
+
+if container_snakefile_path.exists():
+    src_snakemake = container_snakefile_path
+elif local_snakefile_path.exists():
+    src_snakemake = local_snakefile_path
+else:
+    print(f"Error: Source Snakemake file not found at '{container_snakefile_path}' or '{local_snakefile_path}'.")
     sys.exit(1)
 
 dest_snakemake = os.path.join(project_dir, "Snakefile")
@@ -229,7 +253,8 @@ for item_path in potential_barcode_paths:
                 "min_length": params.get('min_length'),
                 "coverage": params.get('coverage'),
                 "run_nextclade": params.get('run_nextclade', False), # Default to False if not specified
-                "nextclade_dataset": params.get('nextclade_dataset') # Can be None
+                "nextclade_dataset": params.get('nextclade_dataset'), # Can be None
+                "primer_allowed_mismatch": params.get('primer_allowed_mismatch')
             }
             # Final check that essential file paths exist
             for key in ['reference_genome', 'primer', 'primer_reference']:
@@ -249,7 +274,8 @@ if not sample_data:
 # Define column order for consistency
 expected_columns = [
     'unique_id', 'sequence_name', 'fastq_path', 'virus_id', 'reference_genome', 'primer',
-    'primer_reference', 'min_length', 'coverage', 'run_nextclade', 'nextclade_dataset'
+    'primer_reference', 'min_length', 'coverage', 'run_nextclade', 'nextclade_dataset',
+    'primer_allowed_mismatch'
 ]
 samples_df = pd.DataFrame(sample_data, columns=expected_columns)
 
