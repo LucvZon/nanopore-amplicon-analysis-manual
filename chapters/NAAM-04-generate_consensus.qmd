@@ -1,4 +1,4 @@
-# 3. Generating a Consensus Sequence {.unnumbered}
+# 3. Manual: Consensus Generation {.unnumbered}
 
 ## 3.1 Mapping trimmed reads to reference {.unnumbered}
 

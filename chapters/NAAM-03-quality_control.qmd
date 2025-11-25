@@ -1,4 +1,6 @@
-# 2. Quality control {.unnumbered}
+# 2. Manual: Quality control {.unnumbered}
+
+The following chapters showcase how the workflow works and guides users on how to manually run each step of the workflow.
 
 ::: callout-warning
 # Important!

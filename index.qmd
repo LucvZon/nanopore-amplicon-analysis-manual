@@ -1,7 +1,28 @@
 # Introduction {.unnumbered}
 
-Welcome to the Nanopore amplicon analysis manual. This manual contains a step by step guide for performing quality control, generating a consensus and comparing sequences to reference sequences. In the final chapter of the manual we will show how to automate all of these steps into a single pipeline for speed and convenience.
+Welcome to the Nanopore amplicon analysis manual. This documentation covers the **NAAM** workflow: an amplicon-based pipeline designed for performing quality control, generating consensus sequences, and comparing sequences to references.
 
-::: callout-tip
-If you are just interested in running the automated workflow, then you only have to check out the chapters 'Preparation' and 'Automating data analysis'.
-:::
+This manual is divided into two parts:
+
+1.  **Quick Start:** How to set up and run the automated pipeline immediately.
+2.  **Manual Execution:** A detailed breakdown of the underlying bioinformatic steps (Under the hood).
+
+## Workflow Summary
+
+The pipeline performs the following steps:
+
+1.  **Quality control**
+    *   Merging and decompressing raw data.
+    *   Quality trimming with [fastp](https://github.com/OpenGene/fastp).
+    *   Primer trimming with [Ampliclip](https://github.com/dnieuw/Ampliclip).
+
+2.  **Generating consensus sequences**
+    *   Mapping trimmed reads to a reference with [minimap2](https://github.com/lh3/minimap2).
+    *   Generate consensus sequences with [Virconsens](https://github.com/dnieuw/Virconsens).
+
+3.  **Comparing sequences to references**
+    *   Create multiple sequence alignment between consensus sequences and a reference.
+    *   Generate read statistics for raw, QC, trimmed, and mapped reads.
+
+4.  **Variant Analysis (Optional)**
+    *   [Nextclade CLI](https://docs.nextstrain.org/projects/nextclade/en/stable/user/nextclade-cli/index.html) analysis for clade assignment and mutation calling.

@@ -1,4 +1,4 @@
-# 4. Comparing sequence to reference sequences {.unnumbered}
+# 4. Manual: Sequence Comparison {.unnumbered}
 
 ## 4.1 Creating multiple sequence alignment {.unnumbered}
 
@@ -47,5 +47,5 @@ done > {output}
 - `{output}` is a tab separated (.tsv) file with the read stats.
 
 ::: {.callout-note}
-If you are not analyzing SARS-CoV-2 data, then you can skip the next chapter and go to the final chapter to automate all of the steps we've previously discussed.
+As an optional step you can move on to the next chapter and run Nextclade for your generated consensus sequences. 
 :::

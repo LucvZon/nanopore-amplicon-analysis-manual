@@ -9,12 +9,11 @@ book:
   date: "04/23/2025"
   chapters:
     - index.qmd
-    - chapters/NAAM-02-preparation.qmd
+    - chapters/NAAM-02-quick_start.qmd
     - chapters/NAAM-03-quality_control.qmd
     - chapters/NAAM-04-generate_consensus.qmd
     - chapters/NAAM-05-compare_sequences.qmd
     - chapters/NAAM-06-sars_cov_2.qmd
-    - chapters/NAAM-07-nanopore_hpc.qmd
 
 toc: true
 number-sections: true

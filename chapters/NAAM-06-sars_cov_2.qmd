@@ -1,4 +1,4 @@
-# 5. Nextclade CLI {.unnumbered}
+# 5. Manual: Nextclade CLI {.unnumbered}
 
 You can use the command line version of Nextclade [Nextclade](https://docs.nextstrain.org/projects/nextclade/en/stable/) to identify differences between query sequences and a reference sequence and to assign query sequences to clades. 
 
@@ -64,7 +64,3 @@ pangolin {input} --outfile {output}
 
 - `{input}` is your aggregated consensus fasta file from step X.X.
 - `{output}` is a .csv file that contains taxon name and lineage assigned per fasta sequence. Read more about the output format: [https://cov-lineages.org/resources/pangolin/output.html](https://cov-lineages.org/resources/pangolin/output.html)
-
-::: {.callout-note}
-You can now move to the final chapter to automate all of the steps we’ve previously discussed.
-:::
