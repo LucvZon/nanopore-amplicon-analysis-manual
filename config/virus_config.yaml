@@ -1,35 +1,38 @@
 sars-cov-2:
   # Paths to reference and primer files
-  reference_genome: /path/to/reference.fasta
-  primer: /path/to/primer.fasta
-  primer_reference: /path/to/primer_reference.fasta
+  reference_genome: /abs/path/to/reference.fasta
+  primer: /abs/path/to/primer.fasta
+  primer_reference: /abs/path/to/primer_reference.fasta
   
   # Required analysis parameters
   min_length: 250
   coverage: 30
+  primer_allowed_mismatch: 2
   
   # Optional workflow steps
   run_nextclade: true
   nextclade_dataset: 'nextstrain/sars-cov-2/wuhan-hu-1/orfs' # Official Nextclade maintained dataset
 
 measles:
-  reference_genome: /path/to/reference.fasta
-  primer: /path/to/primer.fasta
-  primer_reference: /path/to/primer_reference.fasta
+  reference_genome: /abs/path/to/reference.fasta
+  primer: /abs/path/to/primer.fasta
+  primer_reference: /abs/path/to/primer_reference.fasta
 
   min_length: 100
   coverage: 30
+  primer_allowed_mismatch: 2
   
   run_nextclade: true
-  nextclade_dataset: '/path/to/custom/measles/dataset' # Custom user created dataset
+  nextclade_dataset: '/abs/path/to/custom/measles/dataset' # Custom user created dataset
 
 mpox:
-  reference_genome: /path/to/reference.fasta
-  primer: /path/to/primer.fasta
-  primer_reference: /path/to/primer_reference.fasta
+  reference_genome: /abs/path/to/reference.fasta
+  primer: /abs/path/to/primer.fasta
+  primer_reference: /abs/path/to/primer_reference.fasta
 
   min_length: 1000
   coverage: 30
+  primer_allowed_mismatch: 2
   
   run_nextclade: false # Nextclade will not run for this virus
   nextclade_dataset: null
