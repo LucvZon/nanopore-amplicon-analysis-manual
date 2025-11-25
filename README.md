@@ -16,7 +16,7 @@ Interesting files can be found here:
 
 1.  **Download pre-built image**
 ```         
-wget https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/download/v1.0.0/naam_workflow.sif
+wget https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/latest/download/naam_workflow.sif
 ```
 
 2.  **Prepare project directory**
