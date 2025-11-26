@@ -72,16 +72,16 @@ cd ..
 ## Brief workflow summary:
 
 1.  **Quality control**
-  -   Merging and decompressing with zcat
-  -   Quality trimming with [fastp](https://github.com/OpenGene/fastp)
-  -   Primer trimming with [Ampliclip](https://github.com/dnieuw/Ampliclip)
+    - Merging and decompressing with zcat
+    - Quality trimming with [fastp](https://github.com/OpenGene/fastp)
+    - Primer trimming with [Ampliclip](https://github.com/dnieuw/Ampliclip)
 
 2.  Generating consensus sequences
-  -   Mapping trimmed reads to a reference with [minimap2](https://github.com/lh3/minimap2)
-  -   Generate consensus sequences with [Virconsens](https://github.com/dnieuw/Virconsens)
+    - Mapping trimmed reads to a reference with [minimap2](https://github.com/lh3/minimap2)
+    - Generate consensus sequences with [Virconsens](https://github.com/dnieuw/Virconsens)
 
 3.  Comparing sequences to references
-  -   Create multiple sequence alignment between consensus sequences and a reference with minimap2 and [gofasta](https://github.com/virus-evolution/gofasta)
-  -   Create some read statistics for raw, QC, trimmed and mapped reads. 
+    - Create multiple sequence alignment between consensus sequences and a reference with minimap2 and [gofasta](https://github.com/virus-evolution/gofasta)
+    - Create some read statistics for raw, QC, trimmed and mapped reads. 
 
 4.  Optional: [Nextclade CLI](https://docs.nextstrain.org/projects/nextclade/en/stable/user/nextclade-cli/index.html).
