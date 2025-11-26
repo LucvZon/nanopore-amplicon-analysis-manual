@@ -1,8 +1,8 @@
 ## Nanopore amplicon analysis manual (NAAM).
 
-[![Deploy Quarto Book](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/actions/workflows/deploy.yml/badge.svg)](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/actions/workflows/deploy.yml)
+[![Deploy Quarto Book](https://github.com/EMC-Viroscience/nanopore-amplicon-analysis-manual/actions/workflows/deploy.yml/badge.svg)](https://github.com/EMC-Viroscience/nanopore-amplicon-analysis-manual/actions/workflows/deploy.yml)
 
-To view the fully fledged manual, please visit the [EMC-Viroscience website](https://lucvzon.github.io/EMC-Viroscience.github.io/workflows.html)!
+To view the fully fledged manual, please visit the [EMC-Viroscience website](https://EMC-Viroscience.github.io/workflows.html)!
 
 Interesting files can be found here:
 
@@ -16,7 +16,7 @@ Interesting files can be found here:
 
 1.  **Download pre-built image**
 ```         
-wget https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/latest/download/naam_workflow.sif
+wget https://github.com/EMC-Viroscience/nanopore-amplicon-analysis-manual/releases/latest/download/naam_workflow.sif
 ```
 
 2.  **Prepare project directory**

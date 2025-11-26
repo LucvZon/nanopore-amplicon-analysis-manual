@@ -119,7 +119,7 @@ parser.add_argument("--sample-map", required=True, help="Path to the sample map 
 
 args = parser.parse_args() # reads command from user
 
-check_for_updates(repo_owner="LucvZon", repo_name="nanopore-amplicon-analysis-manual")
+check_for_updates(repo_owner="EMC-Viroscience", repo_name="nanopore-amplicon-analysis-manual")
 
 
 ### Project directory path

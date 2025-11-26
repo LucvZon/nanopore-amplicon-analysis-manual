@@ -37,7 +37,7 @@ When using Nextclade, make sure that the reference sequence of the dataset is th
 
 ## 5.2 Custom nextclade visualisation {.unnumbered}
 
-If your Nextclade dataset contained a GFF3 annotation file for the reference sequence, then you can use the [viz_nextclade_cli.R](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/tree/main/scripts) script to visualize the amino acid mutations per genetic feature. The plots will be generated for each genetic feature of the reference sequence and are output as plotly and ggplotly versions.
+If your Nextclade dataset contained a GFF3 annotation file for the reference sequence, then you can use the [viz_nextclade_cli.R](https://github.com/EMC-Viroscience/nanopore-amplicon-analysis-manual/tree/main/scripts) script to visualize the amino acid mutations per genetic feature. The plots will be generated for each genetic feature of the reference sequence and are output as plotly and ggplotly versions.
 
 Execute the following:
 ```bash
@@ -62,5 +62,5 @@ As Nextclade already performs pangolin classification step for you, it has becom
 pangolin {input} --outfile {output}
 ```
 
-- `{input}` is your aggregated consensus fasta file from step X.X.
+- `{input}` is your consensus fasta file from step 3.2.
 - `{output}` is a .csv file that contains taxon name and lineage assigned per fasta sequence. Read more about the output format: [https://cov-lineages.org/resources/pangolin/output.html](https://cov-lineages.org/resources/pangolin/output.html)

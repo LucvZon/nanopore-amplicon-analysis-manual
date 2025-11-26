@@ -24,10 +24,10 @@ The workflow is distributed as a self-contained Singularity container image, whi
 Download the required workflow image file (`naam_workflow.sif`) directly through the terminal:
 
 ```bash
-wget https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/latest/download/naam_workflow.sif
+wget https://github.com/EMC-Viroscience/nanopore-amplicon-analysis-manual/releases/latest/download/naam_workflow.sif
 ```
 
-Or go to the [github page](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/releases/latest){target="_blank"} and manually download it there, then transfer it to your HPC system.
+Or go to the [github page](https://github.com/EMC-Viroscience/nanopore-amplicon-analysis-manual/releases/latest){target="_blank"} and manually download it there, then transfer it to your HPC system.
 
 ## 1.3 Verify Container {.unnumbered}
 
@@ -43,7 +43,7 @@ singularity shell naam_workflow.sif
 
 `singularity shell naam_workflow.sif` will drop you into a shell running inside the container. The conda environment needed for this workflow is automatically active on start-up of the interactive shell. All the tools of the conda environment will therefore be ready to use.
 
-Please note that you do not have to run `conda activate {environment}` to activate the environment – everything is inside naam_workflow.sif. If you're curious about the conda environment we're using, you can check it out [here](https://github.com/LucvZon/nanopore-amplicon-analysis-manual/blob/main/envs/environment.yml){target="_blank"}
+Please note that you do not have to run `conda activate {environment}` to activate the environment – everything is inside naam_workflow.sif. If you're curious about the conda environment we're using, you can check it out [here](https://github.com/EMC-Viroscience/nanopore-amplicon-analysis-manual/blob/main/envs/environment.yml){target="_blank"}
 
 ## 1.4 Project Setup
 
