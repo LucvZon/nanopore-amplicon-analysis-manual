@@ -14,10 +14,22 @@ import os
 # If it exists, we are in the container. Otherwise, we are running locally.
 if "SINGULARITY_NAME" in os.environ:
     # We are in the container, scripts are in the root.
-    SCRIPT_PATH = "/" 
+    SCRIPT_PATH = "/"
+    VERSION_FILE_PATH = "/NAAM_VERSION"
+    print(f"--- Running inside Singularity. Expecting version file at: {VERSION_FILE_PATH} ---", flush=True)
 else:
     # We are running locally, scripts are in the 'scripts' sub-directory.
     SCRIPT_PATH = "scripts/"
+    VERSION_FILE_PATH = "NAAM_VERSION"
+    print(f"--- Running in a local environment. Expecting version file at: {VERSION_FILE_PATH} ---", flush=True)
+
+# --- Print container version to the log for immediate feedback ---
+try:
+    with open(VERSION_FILE_PATH, "r") as f:
+        container_version = f.read().strip()
+    print(f"--- NAAM Workflow running with container version: {container_version} ---", flush=True)
+except FileNotFoundError:
+    print("--- WARNING: Could not determine container version. {VERSION_FILE_PATH} not found. ---", flush=True)
 
 # Load in sample data
 sample_data = pd.read_csv("sample.tsv", sep="\t")
@@ -90,6 +102,7 @@ def get_final_outputs():
                  required_dataset_paths.append(f"result/nextclade_downloads/{safe_name}")
 
     # Non-grouped outputs
+    outputs.append("result/used_container_version.txt")
     outputs.append("result/readstats/raw.tsv")
     outputs.append("result/readstats/QC.tsv")
     outputs.append("result/readstats/trimmed.tsv")
@@ -102,6 +115,16 @@ def get_final_outputs():
 rule all:
     input:
         get_final_outputs()
+
+rule record_container_version:
+    message:
+        "Recording the NAAM container version used for this run."
+    output:
+        "result/used_container_version.txt"
+    shell:
+        """
+        cat {VERSION_FILE_PATH} > {output}
+        """
 
 rule merge_barcodes:
     input:
