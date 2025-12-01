@@ -52,7 +52,7 @@ singularity exec \
 Here are all the steps outlined:
 ```         
 # Create the environment
-conda env create -f environment.yml
+conda env create -f envs/environment.yml
 
 # Installation of Virconsens and Ampliclip need to be performed with the 'naam' conda environment activated
 conda activate naam
