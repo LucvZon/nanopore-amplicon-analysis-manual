@@ -106,6 +106,53 @@ def check_for_updates(repo_owner: str, repo_name: str):
             print(f"\n\n{Colors.RED}Aborting script.{Colors.ENDC}", file=sys.stderr)
             sys.exit(1)
 
+def load_sample_map(sample_map_path):
+    """
+    Load a sample map file with automatic delimiter detection.
+    Supports CSV/TSV/semicolon/pipe-separated files and Excel files.
+    """
+    # Detect Excel formats
+    excel_ext = (".xlsx", ".xls", ".xlsm", ".xlsb", ".odf", ".ods", ".odt")
+    try:
+        # Excel formats
+        if sample_map_path.lower().endswith(excel_ext):
+            try:
+                df = pd.read_excel(sample_map_path)
+                print(f"Loaded sample map (Excel): {sample_map_path}")
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to read Excel file '{sample_map_path}': {e}"
+                )
+        # Or delimited text formats (CSV, TSV, etc.)
+        else:
+            try:
+                df = pd.read_csv(
+                    sample_map_path,
+                    sep=None,               # autodetect delimiter
+                    engine='python',        # needed for SEP autodetect
+                    skipinitialspace=True   # trim spaces after delimiters
+                )
+                print(f"Loaded sample map (text file): {sample_map_path}")
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to detect delimiter or read text file '{sample_map_path}': {e}"
+                )
+        # Validate required columns
+        required = {'barcode_dir', 'virus_id'}
+        missing = required - set(df.columns)
+
+        if missing:
+            raise ValueError(
+                f"Missing required column(s): {', '.join(missing)}.\n"
+                f"Your sample map must contain: {', '.join(required)}"
+            )
+        # Use barcode_dir as index
+        df.set_index('barcode_dir', inplace=True)
+        return df
+    except Exception as e:
+        print(f"\nERROR while loading sample map '{sample_map_path}':\n{e}\n", file=sys.stderr)
+        sys.exit(1)
+
 # Argument parsing
 parser = argparse.ArgumentParser(
     description="Interactive tool for setting up a multi-virus amplicon analysis project.",
@@ -193,17 +240,7 @@ except Exception as e:
     sys.exit(1)
 
 # --- Load Sample Map CSV ---
-try:
-    sample_map_df = pd.read_csv(args.sample_map)
-    if not all(col in sample_map_df.columns for col in ['barcode_dir', 'virus_id']):
-        raise ValueError("Sample map must contain 'barcode_dir' and 'virus_id' columns.")
-    # Use the barcode directory name as the index for easy lookups
-    sample_map_df.set_index('barcode_dir', inplace=True)
-    print(f"Successfully loaded sample map from: {args.sample_map}")
-except Exception as e:
-    print(f"Error: Failed to load or parse sample map file '{args.sample_map}': {e}", file=sys.stderr)
-    sys.exit(1)
-
+sample_map_df = load_sample_map(args.sample_map)
 
 print("\nScanning for barcode directories and generating sample sheet...")
 sample_data = []
