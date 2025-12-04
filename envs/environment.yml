@@ -20,6 +20,7 @@ dependencies:
   - conda-forge::biopython=1.85
   - bioconda::pysam=0.23.3
   - bioconda::nextclade=3.15.3
+  - conda-forge::openpyxl=3.1.5
 
   # R packages
   - conda-forge::r-plotly=4.11.0
