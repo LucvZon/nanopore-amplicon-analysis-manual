@@ -107,6 +107,7 @@ def get_final_outputs():
     outputs.append("result/readstats/QC.tsv")
     outputs.append("result/readstats/trimmed.tsv")
     outputs.append("result/readstats/mapped.tsv")
+    outputs.append("result/consensus_evaluation.tsv")
     
     outputs.extend(list(set(required_dataset_paths)))
     # Ensure return is correctly indented at the function level
@@ -432,6 +433,87 @@ rule generate_readstats_mapped:
             samtools fastq $file | seqkit stats -T --stdin-label $file
         done > {output}
         """
+
+rule evaluate_consensus:
+    message:
+        "Evaluating aligned consensus coverage and identity to identify best reference match."
+    input:
+        alignments=expand("result/{virus}/alignment/all_consensus_aligned.fasta", virus=VIRUSES),
+        sample_sheet="sample.tsv"
+    output:
+        "result/consensus_evaluation.tsv"
+    run:
+        from Bio import SeqIO
+        import pandas as pd
+        import os
+
+        # Load sample map
+        df = pd.read_csv(input.sample_sheet, sep='\t')
+        
+        # Create a dictionary to quickly look up sample info by its sequence_name FASTA header
+        seq_info = df.set_index("sequence_name").to_dict("index")
+
+        results = []
+        for align_file in input.alignments:
+            # align_file looks like: "result/denv1/alignment/all_consensus_aligned.fasta"
+            # Extract the virus_id from the path
+            virus_id = align_file.split('/')[1]
+            
+            # Get the reference genome path for this specific virus
+            ref_file = df[df['virus_id'] == virus_id]['reference_genome'].iloc[0]
+            
+            try:
+                # 1. Load the true reference sequence for this virus
+                ref_record = next(SeqIO.parse(ref_file, "fasta"))
+                ref_seq = str(ref_record.seq).upper()
+                ref_len = len(ref_seq)
+                
+                # 2. Iterate through all the aligned consensus sequences in the gofasta output
+                for cons_record in SeqIO.parse(align_file, "fasta"):
+                    seq_name = cons_record.id
+                    
+                    if seq_name not in seq_info:
+                        continue # Failsafe just in case an unknown header appears
+                        
+                    unique_id = seq_info[seq_name]['unique_id']
+                    
+                    # Extract the base barcode (e.g., BC01) to group virtual samples together
+                    barcode = unique_id.split('_')[0] if '_' in unique_id else unique_id
+                    
+                    cons_seq = str(cons_record.seq).upper()
+                    
+                    # Virconsens uses 'N' for low coverage, gofasta uses '-' for deletions
+                    valid_bases = len(cons_seq) - cons_seq.count('N') - cons_seq.count('-')
+                    
+                    # 1:1 zip comparison
+                    matches = 0
+                    for r, c in zip(ref_seq, cons_seq):
+                        if c != 'N' and c != '-':
+                            if r == c:
+                                matches += 1
+
+                    cov_pct = (valid_bases / ref_len) * 100 if ref_len > 0 else 0
+                    id_pct = (matches / valid_bases) * 100 if valid_bases > 0 else 0
+
+                    results.append({
+                        "Barcode": barcode,
+                        "Virus_Track": virus_id,
+                        "Ref_Length": ref_len,
+                        "Valid_Bases": valid_bases,
+                        "Coverage_%": round(cov_pct, 2),
+                        "Identity_%": round(id_pct, 2)
+                    })
+            except Exception as e:
+                print(f"Error processing evaluation for {virus_id}: {e}")
+
+        if results:
+            out_df = pd.DataFrame(results)
+            # Sort by Barcode alphabetically, then by Coverage descending
+            out_df = out_df.sort_values(by=["Barcode", "Coverage_%"], ascending=[True, False])
+            out_df.to_csv(output[0], sep='\t', index=False)
+        else:
+            with open(output[0], 'w') as f:
+                f.write("Barcode\tVirus_Track\tRef_Length\tValid_Bases\tCoverage_%\tIdentity_%\n")
 
 ### DESTROY .snakemake/ AFTER THE WORKFLOW HAS SUCCESFULLY FINISHED
 onsuccess:
