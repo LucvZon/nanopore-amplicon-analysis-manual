@@ -146,8 +146,6 @@ def load_sample_map(sample_map_path):
                 f"Missing required column(s): {', '.join(missing)}.\n"
                 f"Your sample map must contain: {', '.join(required)}"
             )
-        # Use barcode_dir as index
-        df.set_index('barcode_dir', inplace=True)
         return df
     except Exception as e:
         print(f"\nERROR while loading sample map '{sample_map_path}':\n{e}\n", file=sys.stderr)
@@ -255,54 +253,59 @@ for item_path in potential_barcode_paths:
     if os.path.isdir(item_path):
         barcode_dir_name = os.path.basename(item_path)
 
-        # 1. Look up the virus_id from the sample map
-        if barcode_dir_name not in sample_map_df.index:
+        # 1. Look up ALL matching rows for this barcode from the sample map
+        matching_rows = sample_map_df[sample_map_df['barcode_dir'] == barcode_dir_name]
+        
+        if matching_rows.empty:
             print(f"  - Warning: Directory '{barcode_dir_name}' found on disk but not in sample map. Skipping.")
             continue
-        virus_id = sample_map_df.loc[barcode_dir_name, 'virus_id']
 
-        # 2. Get the parameters for this virus from the virus config
-        if virus_id not in virus_config:
-            print(f"  - Warning: virus_id '{virus_id}' (from sample map for '{barcode_dir_name}') not found in virus config. Skipping.")
-            continue
-        params = virus_config[virus_id]
+        # Iterate over every virus assigned to this barcode
+        for _, row in matching_rows.iterrows():
+            virus_id = row['virus_id']
 
-        # 3. Create the unique ID and sequence name
-        number_part = barcode_dir_name[len("barcode"):]
-        if not number_part.isdigit():
-            print(f"  - Warning: Directory name '{barcode_dir_name}' is not in 'barcode<number>' format. Skipping.")
-            continue
-        
-        unique_id = f"BC{int(number_part):02d}"
-        sequence_name = f"{args.study_name}_{unique_id}"
+            # 2. Get the parameters for this virus from the virus config
+            if virus_id not in virus_config:
+                print(f"  - Warning: virus_id '{virus_id}' (from sample map for '{barcode_dir_name}') not found in virus config. Skipping.")
+                continue
+            params = virus_config[virus_id]
 
-        # 4. Build the data dictionary for this sample, making paths absolute
-        try:
-            sample_row = {
-                "unique_id": unique_id,
-                "sequence_name": sequence_name,
-                "fastq_path": item_path,
-                "virus_id": virus_id,
-                # Use .get() for safety and make all paths absolute for robustness
-                "reference_genome": os.path.abspath(params.get('reference_genome')),
-                "primer": os.path.abspath(params.get('primer')),
-                "primer_reference": os.path.abspath(params.get('primer_reference')),
-                "min_length": params.get('min_length'),
-                "coverage": params.get('coverage'),
-                "run_nextclade": params.get('run_nextclade', False), # Default to False if not specified
-                "nextclade_dataset": params.get('nextclade_dataset'), # Can be None
-                "primer_allowed_mismatch": params.get('primer_allowed_mismatch')
-            }
-            # Final check that essential file paths exist
-            for key in ['reference_genome', 'primer', 'primer_reference']:
-                if not os.path.isfile(sample_row[key]):
-                    raise FileNotFoundError(f"File for '{key}' not found at '{sample_row[key]}'")
+            # 3. Create the unique ID and sequence name
+            number_part = barcode_dir_name[len("barcode"):]
+            if not number_part.isdigit():
+                print(f"  - Warning: Directory name '{barcode_dir_name}' is not in 'barcode<number>' format. Skipping.")
+                continue
+            
+            # --- Append virus_id to make the sample ID totally unique ---
+            unique_id = f"BC{int(number_part):02d}_{virus_id}"
+            sequence_name = f"{args.study_name}_{unique_id}"
 
-            sample_data.append(sample_row)
-        except (KeyError, TypeError) as e:
-            print(f"  - Error: Missing a required key (e.g., 'reference_genome') for virus '{virus_id}' in virus config. Skipping sample '{barcode_dir_name}'. Details: {e}", file=sys.stderr)
-        except FileNotFoundError as e:
-            print(f"  - Error: {e}. Skipping sample '{barcode_dir_name}'. Please check paths in virus config.", file=sys.stderr)
+            # 4. Build the data dictionary for this sample, making paths absolute
+            try:
+                sample_row = {
+                    "unique_id": unique_id,
+                    "sequence_name": sequence_name,
+                    "fastq_path": item_path,
+                    "virus_id": virus_id,
+                    "reference_genome": os.path.abspath(params.get('reference_genome')),
+                    "primer": os.path.abspath(params.get('primer')),
+                    "primer_reference": os.path.abspath(params.get('primer_reference')),
+                    "min_length": params.get('min_length'),
+                    "coverage": params.get('coverage'),
+                    "run_nextclade": params.get('run_nextclade', False), 
+                    "nextclade_dataset": params.get('nextclade_dataset'), 
+                    "primer_allowed_mismatch": params.get('primer_allowed_mismatch')
+                }
+                # Final check that essential file paths exist
+                for key in ['reference_genome', 'primer', 'primer_reference']:
+                    if not os.path.isfile(sample_row[key]):
+                        raise FileNotFoundError(f"File for '{key}' not found at '{sample_row[key]}'")
+
+                sample_data.append(sample_row)
+            except (KeyError, TypeError) as e:
+                print(f"  - Error: Missing a required key for virus '{virus_id}'. Skipping sample mapping '{barcode_dir_name}'. Details: {e}", file=sys.stderr)
+            except FileNotFoundError as e:
+                print(f"  - Error: {e}. Skipping sample mapping '{barcode_dir_name}'. Please check paths in virus config.", file=sys.stderr)
 
 # --- Create and Save the DataFrame ---
 if not sample_data:
