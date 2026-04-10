@@ -430,8 +430,8 @@ rule generate_readstats_mapped:
     shell:
         """
         for file in {input}; do
-            samtools fastq $file | seqkit stats -T --stdin-label $file
-        done > {output}
+            samtools fastq $file 2>/dev/null | seqkit stats -T --stdin-label $file
+        done | awk 'NR==1 || !/^file/' > {output}
         """
 
 rule evaluate_consensus:
