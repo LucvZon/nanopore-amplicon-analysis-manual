@@ -185,7 +185,7 @@ rule trim_primers:
         primers=lambda wildcards: sample_data[wildcards.sample_id]["primer"],
         min_length=lambda wildcards: sample_data[wildcards.sample_id]["min_length"],
         mismatch=lambda wildcards: sample_data[wildcards.sample_id]["primer_allowed_mismatch"]
-    threads: 1
+    threads: 4
     shell:
         """
         samtools index {input.mapped}
@@ -197,9 +197,10 @@ rule trim_primers:
         --primerfile {params.primers} \
         --referencefile {params.reference}\
         -fwd LEFT -rev RIGHT \
+        --threads {threads} \
         --padding 20 --mismatch {params.mismatch} --minlength {params.min_length} > {log} 2>&1
 
-        samtools sort {output.clipped}_ > {output.clipped}
+        samtools sort -@ {threads} {output.clipped}_ > {output.clipped}
         rm {output.clipped}_
         """
 
