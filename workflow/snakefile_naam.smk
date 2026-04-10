@@ -107,6 +107,7 @@ def get_final_outputs():
     outputs.append("result/readstats/QC.tsv")
     outputs.append("result/readstats/trimmed.tsv")
     outputs.append("result/readstats/mapped.tsv")
+    outputs.append("result/consensus_evaluation.tsv")
     
     outputs.extend(list(set(required_dataset_paths)))
     # Ensure return is correctly indented at the function level
@@ -184,7 +185,7 @@ rule trim_primers:
         primers=lambda wildcards: sample_data[wildcards.sample_id]["primer"],
         min_length=lambda wildcards: sample_data[wildcards.sample_id]["min_length"],
         mismatch=lambda wildcards: sample_data[wildcards.sample_id]["primer_allowed_mismatch"]
-    threads: 1
+    threads: 4
     shell:
         """
         samtools index {input.mapped}
@@ -196,9 +197,10 @@ rule trim_primers:
         --primerfile {params.primers} \
         --referencefile {params.reference}\
         -fwd LEFT -rev RIGHT \
+        --threads {threads} \
         --padding 20 --mismatch {params.mismatch} --minlength {params.min_length} > {log} 2>&1
 
-        samtools sort {output.clipped}_ > {output.clipped}
+        samtools sort -@ {threads} {output.clipped}_ > {output.clipped}
         rm {output.clipped}_
         """
 
@@ -429,9 +431,98 @@ rule generate_readstats_mapped:
     shell:
         """
         for file in {input}; do
-            samtools fastq $file | seqkit stats -T --stdin-label $file
-        done > {output}
+            samtools fastq $file 2>/dev/null | seqkit stats -T --stdin-label $file
+        done | awk 'NR==1 || !/^file/' > {output}
         """
+
+rule evaluate_consensus:
+    message:
+        "Evaluating aligned consensus coverage and identity to identify best reference match."
+    input:
+        alignments=expand("result/{virus}/alignment/all_consensus_aligned.fasta", virus=VIRUSES),
+        sample_sheet="sample.tsv"
+    output:
+        "result/consensus_evaluation.tsv"
+    run:
+        from Bio import SeqIO
+        import pandas as pd
+        import os
+
+        # Load sample map
+        df = pd.read_csv(input.sample_sheet, sep='\t')
+        
+        # Create a dictionary to quickly look up sample info by its sequence_name FASTA header
+        seq_info = df.set_index("sequence_name").to_dict("index")
+
+        # 1. Pre-calculate the reference lengths for all viruses
+        ref_lengths = {}
+        for virus in df['virus_id'].unique():
+            ref_file = df[df['virus_id'] == virus]['reference_genome'].iloc[0]
+            try:
+                ref_record = next(SeqIO.parse(ref_file, "fasta"))
+                ref_lengths[virus] = len(ref_record.seq)
+            except Exception as e:
+                print(f"Error loading reference for {virus}: {e}")
+                ref_lengths[virus] = 0
+
+        # 2. Pre-populate the results dictionary with EVERY sample (defaulting to 0)
+        results_dict = {}
+        for seq_name, info in seq_info.items():
+            unique_id = info['unique_id']
+            barcode = unique_id.split('_')[0] if '_' in unique_id else unique_id
+            virus_track = info['virus_id']
+            
+            results_dict[seq_name] = {
+                "Barcode": barcode,
+                "Virus_Track": virus_track,
+                "Ref_Length": ref_lengths.get(virus_track, 0),
+                "Valid_Bases": 0,
+                "Coverage_%": 0.0,
+                "Identity_%": 0.0
+            }
+
+        # 3. Read the alignments and update the successful ones
+        for align_file in input.alignments:
+            virus_id = align_file.split('/')[1]
+            ref_file = df[df['virus_id'] == virus_id]['reference_genome'].iloc[0]
+            
+            try:
+                ref_record = next(SeqIO.parse(ref_file, "fasta"))
+                ref_seq = str(ref_record.seq).upper()
+                
+                for cons_record in SeqIO.parse(align_file, "fasta"):
+                    seq_name = cons_record.id
+                    
+                    if seq_name not in results_dict:
+                        continue 
+                        
+                    cons_seq = str(cons_record.seq).upper()
+                    
+                    # Calculate valid bases and matches
+                    valid_bases = len(cons_seq) - cons_seq.count('N') - cons_seq.count('-')
+                    matches = sum(1 for r, c in zip(ref_seq, cons_seq) if c != 'N' and c != '-' and r == c)
+
+                    ref_len = ref_lengths.get(virus_id, 0)
+                    cov_pct = (valid_bases / ref_len) * 100 if ref_len > 0 else 0
+                    id_pct = (matches / valid_bases) * 100 if valid_bases > 0 else 0
+
+                    # Overwrite the defaults with the real data
+                    results_dict[seq_name]["Valid_Bases"] = valid_bases
+                    results_dict[seq_name]["Coverage_%"] = round(cov_pct, 2)
+                    results_dict[seq_name]["Identity_%"] = round(id_pct, 2)
+                    
+            except Exception as e:
+                print(f"Error processing evaluation for {virus_id}: {e}")
+
+        # 4. Convert to DataFrame and sort
+        if results_dict:
+            out_df = pd.DataFrame(list(results_dict.values()))
+            # Sort by Barcode alphabetically, then by Coverage descending
+            out_df = out_df.sort_values(by=["Barcode", "Coverage_%"], ascending=[True, False])
+            out_df.to_csv(output[0], sep='\t', index=False)
+        else:
+            with open(output[0], 'w') as f:
+                f.write("Barcode\tVirus_Track\tRef_Length\tValid_Bases\tCoverage_%\tIdentity_%\n")
 
 ### DESTROY .snakemake/ AFTER THE WORKFLOW HAS SUCCESFULLY FINISHED
 onsuccess:
