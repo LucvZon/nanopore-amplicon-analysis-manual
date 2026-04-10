@@ -3,11 +3,11 @@ From: continuumio/miniconda3
 
 %files
     # Relative paths from where you run 'singularity build'
-    ../envs/naam.tar.gz /naam.tar.gz
-    ../python/amplicon_project.py /amplicon_project.py
-    ../workflows/snakefile_naam.smk /snakefile_naam.smk
-    ../r/viz_nextclade_cli.R /viz_nextclade_cli.R
-    ../configs/virus_config.yaml /virus_config.yaml
+    envs/naam.tar.gz /naam.tar.gz
+    scripts/amplicon_project.py /amplicon_project.py
+    workflow/snakefile_naam.smk /snakefile_naam.smk
+    scripts/viz_nextclade_cli.R /viz_nextclade_cli.R
+    config/virus_config.yaml /virus_config.yaml
     NAAM_VERSION /NAAM_VERSION
 
 
