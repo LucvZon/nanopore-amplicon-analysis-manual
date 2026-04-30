@@ -128,6 +128,25 @@ To see what has happened in the trimming process we can open the `.bam` mapping 
 
 In UGENE you can open a `.bam` via the "open file" option.
 
+Moreover, you can take a look at the informative Ampliclip log files. Here you can see how many reads were successfully trimmed, how many times each primer was trimmed and at which position the primer aligned to the used reference.
+
+Basic example of an ampliclip log file:
+```
+--- Ampliclip Run Summary ---
+Total reads processed: 2650
+Reads clipped: 2600 (98.11%)
+--- Clipping events by primer ---
+Primer ID                      Count      Position       
+Primer_1_LEFT                  850        0-25
+Primer_1_RIGHT                 850        512-533
+Primer_2_LEFT                  450        464-482
+Primer_2_RIGHT                 450        937-959
+--- End of Summary ---
+Could not find a good match between Primer_3_LEFT and KY969477.1
+Could not find a good match between Primer_3_RIGHT and KY969477.1
+```
+You can quickly see that most reads were clipped by Ampliclip, where they got clipped in retrospect to the reference genome, and that 'Primer_3' was unable to align to the used reference. 
+
 ::: {.callout-note}
 We now have our quality controlled sequence reads which we can use to create a consensus sequence in the next chapter.
 :::
