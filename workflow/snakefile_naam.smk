@@ -601,8 +601,8 @@ rule evaluate_consensus:
             
             # Reorder columns specifically to ensure the new columns appear where they make sense
             col_order = [
-                "Barcode", "Virus_Track", "Raw_reads", "QC_reads", "Mapped_reads", 
-                "Main_QC_fail_reason", "Ref_Length", "Valid_Bases", "Coverage_%", "Identity_%"
+                "Barcode", "Virus_Track", "Ref_Length", "Valid_Bases", "Coverage_%", "Identity_%",
+                "Raw_reads", "QC_reads", "Mapped_reads", "Main_QC_fail_reason"
             ]
             out_df = out_df[col_order]
             
