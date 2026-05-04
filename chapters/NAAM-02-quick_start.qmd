@@ -49,12 +49,11 @@ Please note that you do not have to run `conda activate {environment}` to activa
 
 We use a tool called [Snakemake](https://snakemake.readthedocs.io/en/stable/){target="_blank"} to automate the analysis. To simplify the creation of the required configuration files, the container includes a helper script called `amplicon_project.py`.
 
-### Required Configuration Files
+By default, this script will **automatically detect** which virus is in each of your barcode folders by subsampling the raw reads and mapping them against your references.
 
-Before running the setup script, ensure you have the following two files ready:
+### Configuration Files
 
-1. `virus_config.yaml`: Defines parameters for the viruses you are analyzing.
-2. `sample_map.csv`: Links your barcode directories to the specific virus ID defined in the config.
+Before running the setup script, ensure you have your `virus_config.yaml` ready. This file defines the reference genomes and parameters for the viruses you are analyzing.
 
 Example `virus_config.yaml`:
 ```yaml
@@ -98,12 +97,16 @@ mpox:
 
 Key parameters within each virus entry include:
 
-- `reference_genome, primer, primer_reference`: Absolute paths to the respective FASTA files.
+- `reference_genome, primer, primer_reference`: Absolute paths to the respective FASTA files. The primer_reference is the reference genome that your primers are based on.
 - `min_length`: The minimum read length to keep after QC. Must be below the expected amplicon size.
 - `coverage`: The minimum read depth required for consensus calling. 30x is a common minimum.
-- `primer_allowed_mismatch`: The number of mismatches allowed while matching and determining the position of the primers.
+- `primer_allowed_mismatch`: The number of mismatches allowed while matching and determining the position of the primers. *(Note: If using a multiplexed "super-primer" FASTA with multiple subtypes, consider increasing this to 4 or 5 to ensure off-target primers are successfully trimmed).*
 - `run_nextclade`: Set to true to enable the Nextclade analysis for this virus, false otherwise.
 - `nextclade_dataset`: Path to a Nextclade dataset. This can be an official dataset name (the workflow will download it) or an absolute path to a custom dataset you have locally.
+
+### Optional: Manual Sample Map
+
+If you want to bypass the auto-detection, you can optionally provide a `sample_map.csv` to force the assignment of barcodes to specific viruses.
 
 Example `sample_map.csv`:
 ```bash
@@ -114,6 +117,7 @@ barcode03,measles
 barcode04,measles
 barcode05,mpox
 ```
+*(If multiplexing subtypes, e.g., Dengue 1-4, you can list the same barcode multiple times to run the workflow for each subtype simultaneously).*
 
 - `barcode_dir`: Name of barcode directory containing raw fastq.gz files. 
 - `virus_id`: Virus name, must match with names in the virus config.
@@ -132,19 +136,25 @@ singularity exec \
     -p {project.folder} \
     -n {name} \
     -d {reads} \
-    --virus-config {virus_config.yaml} \
-    --sample-map {sample_map.csv}
+    --virus-config {virus_config.yaml}
 ```
 
 ::: callout-important
-Please use absolute paths for the **reads**, **virus_config.yaml** and **sample_map.csv** so that they can always be located.
+Please use absolute paths for the **reads** and **virus_config.yaml** so that they can always be located.
 :::
+
+### Required Arguments:
 
 - `{project.folder}`: The new directory where results will be stored.
 - `{name}`: Name of your study (no spaces).
 - `{reads}`: Folder containing your barcode subdirectories (e.g., barcode01).
 - `{virus_config.yaml}`: Path to your YAML config.
-- `{sample_map.csv}`: Path to your CSV map.
+
+Optional Arguments:
+
+- `--sample-map {sample_map.csv}`: Path to your manual CSV map (disables auto-detection).
+- `--reads-to-test {number}`: Number of reads to subsample per barcode for auto-detection (Default: 2000).
+- `--min-reads {number}`: Minimum number of mapped reads required to confidently assign a virus to a barcode (Default: 50). Barcodes failing this threshold will be bypassed.
 
 ::: callout-important
 **The `--bind` arguments are needed to explicitly tell Singularity to mount the necessary host directories into the container.** The part before the colon is the path on the host machine that you want to make available. The path after the colon is the path inside the container where the host directory should be mounted.
@@ -186,6 +196,7 @@ singularity exec \
 ```
 
 ::: callout-note
-Directory Structure:
-Upon completion, your project folder will contain a results/ directory with subfolders for QC, consensus, variants, and nextclade (if enabled).
+Upon completion, your project folder will contain a **result/** directory with subfolders for QC, consensus, variants, and nextclade (if enabled).
+
+Crucially, you will find a **consensus_evaluation.tsv** in the root of the results/ folder. This summary file provides a comprehensive overview of every barcode, detailing the assigned virus, read statistics, QC filtering reasons, consensus coverage (%), and reference identity (%), allowing you to assess the success of your run at a glance!
 :::

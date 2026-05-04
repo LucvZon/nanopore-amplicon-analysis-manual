@@ -7,9 +7,11 @@ import pandas as pd
 import glob
 import yaml
 import re
-import json # version checker
-import urllib.request # version checker
-from pathlib import Path # version checker
+import json
+import urllib.request
+import subprocess
+from collections import defaultdict
+from pathlib import Path
 
 # ==================================
 #           UPDATE CHECKER
@@ -106,6 +108,10 @@ def check_for_updates(repo_owner: str, repo_name: str):
             print(f"\n\n{Colors.RED}Aborting script.{Colors.ENDC}", file=sys.stderr)
             sys.exit(1)
 
+# ==================================
+#        HELPER FUNCTIONS
+# ==================================
+
 def load_sample_map(sample_map_path):
     """
     Load a sample map file with automatic delimiter detection.
@@ -118,11 +124,9 @@ def load_sample_map(sample_map_path):
         if sample_map_path.lower().endswith(excel_ext):
             try:
                 df = pd.read_excel(sample_map_path)
-                print(f"Loaded sample map (Excel): {sample_map_path}")
+                print(f"Loaded manual sample map (Excel): {sample_map_path}")
             except Exception as e:
-                raise ValueError(
-                    f"Failed to read Excel file '{sample_map_path}': {e}"
-                )
+                raise ValueError(f"Failed to read Excel file '{sample_map_path}': {e}")
         # Or delimited text formats (CSV, TSV, etc.)
         else:
             try:
@@ -132,11 +136,9 @@ def load_sample_map(sample_map_path):
                     engine='python',        # needed for SEP autodetect
                     skipinitialspace=True   # trim spaces after delimiters
                 )
-                print(f"Loaded sample map (text file): {sample_map_path}")
+                print(f"Loaded manual sample map (text file): {sample_map_path}")
             except Exception as e:
-                raise ValueError(
-                    f"Failed to detect delimiter or read text file '{sample_map_path}': {e}"
-                )
+                raise ValueError(f"Failed to detect delimiter or read text file '{sample_map_path}': {e}")
         # Validate required columns
         required = {'barcode_dir', 'virus_id'}
         missing = required - set(df.columns)
@@ -151,6 +153,111 @@ def load_sample_map(sample_map_path):
         print(f"\nERROR while loading sample map '{sample_map_path}':\n{e}\n", file=sys.stderr)
         sys.exit(1)
 
+def extract_fasta_header(fasta_path):
+    """Gets the first sequence ID from a FASTA file."""
+    with open(fasta_path, 'r') as f:
+        for line in f:
+            if line.startswith(">"):
+                return line[1:].split()[0]
+    return None
+
+def auto_generate_sample_map(reads_dir, config, reads_to_test, min_reads, output_csv_path, project_dir):
+    """Subsamples reads and uses minimap2 to auto-detect the virus in each barcode."""
+    print("\nBuilding reference database for auto-detection...")
+    ref_to_virus_id = {}
+    master_fasta_path = os.path.join(project_dir, "temp_master_db.fasta")
+    
+    with open(master_fasta_path, 'w') as master_fasta:
+        for virus_id, params in config.items():
+            ref_path = params.get('reference_genome')
+            if not ref_path or not os.path.isfile(ref_path):
+                continue
+            
+            header = extract_fasta_header(ref_path)
+            if header:
+                ref_to_virus_id[header] = virus_id
+            
+            with open(ref_path, 'r') as ref_file:
+                master_fasta.write(ref_file.read())
+                master_fasta.write("\n")
+
+    results = []
+    search_pattern = os.path.join(os.path.abspath(reads_dir), 'barcode*')
+    
+    print("Scanning barcodes to auto-assign viruses...")
+    for barcode_dir in sorted(glob.glob(search_pattern)):
+        if not os.path.isdir(barcode_dir):
+            continue
+            
+        barcode_name = os.path.basename(barcode_dir)
+        
+        fastq_files = glob.glob(os.path.join(barcode_dir, "*.fastq.gz"))
+        is_gzipped = True
+        if not fastq_files:
+            fastq_files = glob.glob(os.path.join(barcode_dir, "*.fastq"))
+            is_gzipped = False
+            if not fastq_files:
+                continue
+                
+        lines_to_extract = reads_to_test * 4
+        file_list_str = " ".join(fastq_files)
+        
+        if is_gzipped:
+            extract_cmd = f"zcat {file_list_str} 2>/dev/null | head -n {lines_to_extract}"
+        else:
+            extract_cmd = f"cat {file_list_str} 2>/dev/null | head -n {lines_to_extract}"
+
+        minimap_cmd = f"minimap2 -x map-ont --secondary=no {master_fasta_path} - 2>/dev/null"
+        full_cmd = f"{extract_cmd} | {minimap_cmd}"
+        
+        process = subprocess.Popen(full_cmd, shell=True, stdout=subprocess.PIPE, text=True)
+        paf_output, _ = process.communicate()
+        
+        votes = defaultdict(int)
+        seen_reads = set()
+        
+        for line in paf_output.strip().split('\n'):
+            if not line:
+                continue
+            cols = line.split('\t')
+            if len(cols) >= 6:
+                read_id = cols[0]
+                target_header = cols[5]
+                
+                if read_id not in seen_reads:
+                    seen_reads.add(read_id)
+                    votes[target_header] += 1
+
+        if votes:
+            winning_header = max(votes, key=votes.get)
+            winning_votes = votes[winning_header]
+            winning_virus_id = ref_to_virus_id.get(winning_header, "Unknown")
+            total_votes = sum(votes.values())
+            confidence = (winning_votes / total_votes) * 100
+            
+            if winning_votes >= min_reads:
+                print(f"  {barcode_name}: Assigned to -> {winning_virus_id} ({confidence:.1f}% confidence based on {total_votes} unique mapped reads)")
+            else:
+                print(f"  {barcode_name}: FAILED (Top match '{winning_virus_id}' had only {winning_votes} reads. Threshold is {min_reads})")
+                winning_virus_id = "unassigned"
+                
+            results.append({"barcode_dir": barcode_name, "virus_id": winning_virus_id})
+        else:
+            print(f"  {barcode_name}: FAILED (No viral reads detected in subsample.)")
+            results.append({"barcode_dir": barcode_name, "virus_id": "unassigned"})
+
+    if os.path.exists(master_fasta_path):
+        os.remove(master_fasta_path)
+
+    df = pd.DataFrame(results)
+    df.to_csv(output_csv_path, index=False)
+    print(f"\nAuto-generated sample map saved to: {output_csv_path}")
+    return df
+
+# ==================================
+#           MAIN LOGIC
+# ==================================
+
 # Argument parsing
 parser = argparse.ArgumentParser(
     description="Interactive tool for setting up a multi-virus amplicon analysis project.",
@@ -160,9 +267,11 @@ parser.add_argument("-p", "--project_dir", help="Project directory path (default
 parser.add_argument("-n", "--study_name", required=True, help="Name of the study")
 parser.add_argument("-d", "--raw_fastq_dir", required=True, help="Directory containing raw FASTQ barcode subdirectories")
 parser.add_argument("--virus-config", required=True, help="Path to the virus configuration YAML file.")
-parser.add_argument("--sample-map", required=True, help="Path to the sample map CSV file.\n(CSV must have 'barcode_dir' and 'virus_id' columns)")
+parser.add_argument("--sample-map", required=False, help="Path to a manual sample map CSV file. If omitted, it will be auto-generated.")
+parser.add_argument("--reads-to-test", type=int, default=2000, help="Number of reads to sample per barcode for auto-detection. (default: 2000)")
+parser.add_argument("--min-reads", type=int, default=50, help="Minimum mapped reads required to assign a virus during auto-detection. (default: 50)")
 
-args = parser.parse_args() # reads command from user
+args = parser.parse_args()
 
 check_for_updates(repo_owner="EMC-Viroscience", repo_name="nanopore-amplicon-analysis-manual")
 
@@ -188,7 +297,6 @@ print(f"Using project directory: {project_dir}")
 ### Copy Snakemake file and update STUDY_NAME
 # --- Robustly find the source Snakefile ---
 container_snakefile_path = Path("/snakefile_naam.smk")
-
 # When local, it's in '<project_root>/workflow/snakefile_naam.smk'
 script_location = Path(__file__).resolve()
 project_root = script_location.parent.parent
@@ -206,7 +314,6 @@ dest_snakemake = os.path.join(project_dir, "Snakefile")
 
 try:
     shutil.copy2(src_snakemake, dest_snakemake)
-
     with open(dest_snakemake, 'r') as file:
         filedata = file.read()
 
@@ -237,13 +344,25 @@ except Exception as e:
     print(f"Error: Failed to load or parse virus config file '{args.virus_config}': {e}", file=sys.stderr)
     sys.exit(1)
 
-# --- Load Sample Map CSV ---
-sample_map_df = load_sample_map(args.sample_map)
+# --- Resolve Sample Map (Manual or Auto) ---
+if args.sample_map:
+    sample_map_df = load_sample_map(args.sample_map)
+else:
+    print("\nNo manual sample map provided. Generating auto sample map...")
+    auto_map_path = os.path.join(project_dir, "sample_map.csv")
+    sample_map_df = auto_generate_sample_map(
+        reads_dir=args.raw_fastq_dir,
+        config=virus_config,
+        reads_to_test=args.reads_to_test,
+        min_reads=args.min_reads,
+        output_csv_path=auto_map_path,
+        project_dir=project_dir
+    )
 
-print("\nScanning for barcode directories and generating sample sheet...")
+print("\nGenerating final sample sheet for Snakemake...")
 sample_data = []
+unassigned_samples = []
 raw_fastq_dir_abs = os.path.abspath(args.raw_fastq_dir)
-
 
 # Find all potential barcode directories
 search_pattern = os.path.join(raw_fastq_dir_abs, 'barcode*')
@@ -253,34 +372,36 @@ for item_path in potential_barcode_paths:
     if os.path.isdir(item_path):
         barcode_dir_name = os.path.basename(item_path)
 
-        # 1. Look up ALL matching rows for this barcode from the sample map
+        # Extract the base barcode
+        number_part = barcode_dir_name[len("barcode"):]
+        if not number_part.isdigit():
+            print(f"  - Warning: Directory name '{barcode_dir_name}' is not in 'barcode<number>' format. Skipping.")
+            continue
+        base_barcode = f"BC{int(number_part):02d}"
+
+        # Look up matching rows for this barcode from the sample map
         matching_rows = sample_map_df[sample_map_df['barcode_dir'] == barcode_dir_name]
         
         if matching_rows.empty:
             print(f"  - Warning: Directory '{barcode_dir_name}' found on disk but not in sample map. Skipping.")
             continue
 
-        # Iterate over every virus assigned to this barcode
         for _, row in matching_rows.iterrows():
             virus_id = row['virus_id']
 
-            # 2. Get the parameters for this virus from the virus config
             if virus_id not in virus_config:
-                print(f"  - Warning: virus_id '{virus_id}' (from sample map for '{barcode_dir_name}') not found in virus config. Skipping.")
+                if virus_id == "unassigned":
+                    print(f"  - Note: '{barcode_dir_name}' did not meet read thresholds. Bypassing pipeline, but will report in final evaluation.")
+                else:
+                    print(f"  - Warning: virus_id '{virus_id}' not found in virus config. Skipping.")
+                
+                unassigned_samples.append({"barcode": base_barcode, "virus_id": "Failed / Unassigned"})
                 continue
+                
             params = virus_config[virus_id]
-
-            # 3. Create the unique ID and sequence name
-            number_part = barcode_dir_name[len("barcode"):]
-            if not number_part.isdigit():
-                print(f"  - Warning: Directory name '{barcode_dir_name}' is not in 'barcode<number>' format. Skipping.")
-                continue
-            
-            # --- Append virus_id to make the sample ID totally unique ---
-            unique_id = f"BC{int(number_part):02d}_{virus_id}"
+            unique_id = f"{base_barcode}_{virus_id}"
             sequence_name = f"{args.study_name}_{unique_id}"
 
-            # 4. Build the data dictionary for this sample, making paths absolute
             try:
                 sample_row = {
                     "unique_id": unique_id,
@@ -296,22 +417,19 @@ for item_path in potential_barcode_paths:
                     "nextclade_dataset": params.get('nextclade_dataset'), 
                     "primer_allowed_mismatch": params.get('primer_allowed_mismatch')
                 }
-                # Final check that essential file paths exist
                 for key in ['reference_genome', 'primer', 'primer_reference']:
                     if not os.path.isfile(sample_row[key]):
                         raise FileNotFoundError(f"File for '{key}' not found at '{sample_row[key]}'")
 
                 sample_data.append(sample_row)
             except (KeyError, TypeError) as e:
-                print(f"  - Error: Missing a required key for virus '{virus_id}'. Skipping sample mapping '{barcode_dir_name}'. Details: {e}", file=sys.stderr)
+                print(f"  - Error: Missing a required key for virus '{virus_id}'. Skipping '{barcode_dir_name}'. Details: {e}", file=sys.stderr)
             except FileNotFoundError as e:
-                print(f"  - Error: {e}. Skipping sample mapping '{barcode_dir_name}'. Please check paths in virus config.", file=sys.stderr)
+                print(f"  - Error: {e}. Skipping '{barcode_dir_name}'. Please check paths in virus config.", file=sys.stderr)
 
-# --- Create and Save the DataFrame ---
 if not sample_data:
     print("\nWarning: No valid samples were processed. The generated sample.tsv will be empty.", file=sys.stderr)
 
-# Define column order for consistency
 expected_columns = [
     'unique_id', 'sequence_name', 'fastq_path', 'virus_id', 'reference_genome', 'primer',
     'primer_reference', 'min_length', 'coverage', 'run_nextclade', 'nextclade_dataset',
@@ -325,11 +443,17 @@ if not samples_df.empty:
 samples_tsv_path = os.path.join(project_dir, "sample.tsv")
 try:
     samples_df.to_csv(samples_tsv_path, sep='\t', index=False)
-    print(f"\nGenerated sample sheet with {len(samples_df)} samples: {samples_tsv_path}")
+    print(f"\nGenerated sample sheet with {len(samples_df)} valid samples: {samples_tsv_path}")
+
+    if unassigned_samples:
+        unassigned_df = pd.DataFrame(unassigned_samples)
+        unassigned_path = os.path.join(project_dir, "unassigned_samples.tsv")
+        unassigned_df.to_csv(unassigned_path, sep='\t', index=False)
+        print(f"Saved {len(unassigned_samples)} bypassed/failed samples to: {unassigned_path}")
+        
 except Exception as e:
     print(f"Error writing sample sheet to {samples_tsv_path}: {e}", file=sys.stderr)
     sys.exit(1)
-
 
 # Victory lap
 print("\nProject setup complete.")
